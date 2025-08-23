@@ -115,7 +115,7 @@
       </div>
 
       <div style="margin-top:16px" class="card">
-        <h2>🏆 成績排行榜（TOP 10）</h2>
+        <h2>🏆 成績排行榜（TOP 10） <span class="badge" id="cloudBadge" style="margin-left:8px">雲端：檢查中…</span></h2>
         <div class="disclaimer">雲端排行榜以 Firebase 為主，失敗時顯示本機 Demo。</div>
         <div style="overflow:auto">
           <table>
@@ -218,10 +218,18 @@
 
   // ========= Firebase API（請把 <YOUR_PROJECT_ID> 換成實際專案 ID） =========
   const API_BASE = 'https://asia-east1-agri-plant-quiz.cloudfunctions.net/api';
+let CLOUD_OK = false; // 若雲端不可用，排行榜與送分將自動退回本機
   async function cloudSubmitScore(record){
-    try{
-      const res = await fetch(API_BASE + '/submit', {
-        method:'POST', headers:{'Content-Type':'application/json'},
+  try{
+    if(!CLOUD_OK) return null; // 雲端未連線時直接略過
+    const res = await fetch(API_BASE + '/submit', {
+      method:'POST', mode:'cors', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ name:record.name, type:record.type, score:Number(record.score), version:record.version })
+    });
+    if(!res.ok) throw new Error('submit failed '+res.status);
+    return await res.json();
+  }catch(e){ console.warn('submit error', e); return null; }
+},
         body: JSON.stringify({ name:record.name, type:record.type, score:Number(record.score), version:record.version })
       });
       if(!res.ok) throw new Error('submit failed');
@@ -229,11 +237,13 @@
     }catch(e){ console.warn('submit error', e); return null; }
   }
   async function cloudFetchTop10(){
-    try{
-      const res = await fetch(API_BASE + '/top10');
-      if(!res.ok) throw new Error('fetch top10 failed');
-      return await res.json();
-    }catch(e){ console.warn('top10 error', e); return []; }
+  try{
+    if(!CLOUD_OK) return [];
+    const res = await fetch(API_BASE + '/top10', {mode:'cors'});
+    if(!res.ok) throw new Error('fetch top10 failed '+res.status);
+    return await res.json();
+  }catch(e){ console.warn('top10 error', e); return []; }
+}catch(e){ console.warn('top10 error', e); return []; }
   }
 
   // ========= 題庫匯出 =========
@@ -353,8 +363,13 @@
 
   // ========= 排行榜渲染（雲端優先，失敗落回本機） =========
   async function renderBoard(){
-    let data = [];
-    try{ data = await cloudFetchTop10(); }catch{}
+  let data = [];
+  try{ if(CLOUD_OK) data = await cloudFetchTop10(); }catch{}
+  if(!data || !data.length){ data = getBoard(); }
+  const tb=$('#boardBody'); tb.innerHTML='';
+  if(!data.length){ tb.innerHTML='<tr><td colspan="6" class="muted">尚無資料</td></tr>'; return; }
+  data.slice(0,10).forEach((r,i)=>{ const tr=document.createElement('tr'); const t=new Date(r.ts||Date.now()); tr.innerHTML=`<td>${i+1}</td><td>${r.name||''}</td><td>${r.type||''}</td><td>${(typeof r.score==='number')? r.score.toFixed(2): r.score}</td><td>${t.toLocaleString()}</td><td>${r.version||''}</td>`; tb.appendChild(tr); });
+}catch{}
     if(!data || !data.length){ data = getBoard(); }
     const tb=$('#boardBody'); tb.innerHTML='';
     if(!data.length){ tb.innerHTML='<tr><td colspan="6" class="muted">尚無資料</td></tr>'; return; }
@@ -363,12 +378,20 @@
 
   // ========= 初始化 =========
   (async function init(){
-    await loadQuestions();
-    $('#badgeVersion').textContent='ver '+QUIZ_VERSION;
-    renderPeople();
-    renderBoard();
-    showResumeIfAny();
-  })();
+  await loadQuestions();
+  $('#badgeVersion').textContent='ver '+QUIZ_VERSION;
+  // 啟動雲端自檢：可用則顯示綠色，失敗則進入本機模式
+  try{
+    const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), 6000);
+    const ping = await fetch(API_BASE + '/top10', {mode:'cors', signal: ctl.signal});
+    clearTimeout(t);
+    if(ping.ok){ CLOUD_OK = true; $('#cloudBadge').textContent='雲端：連線正常'; $('#cloudBadge').style.background='#dcfce7'; }
+    else { CLOUD_OK=false; $('#cloudBadge').textContent='雲端：未連線（改用本機）'; $('#cloudBadge').style.background='#fee2e2'; }
+  }catch(e){ CLOUD_OK=false; $('#cloudBadge').textContent='雲端：未連線（改用本機）'; $('#cloudBadge').style.background='#fee2e2'; console.warn('Cloud unreachable', e); }
+  renderPeople();
+  renderBoard();
+  showResumeIfAny();
+})();
   </script>
 </body>
 </html>
