@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>農藝丙級術科識別線上模擬測驗</title>
+  //<!-- 安全：不含任何金鑰；題庫以 fetch 同目錄 questions.json 載入 -->
   <style>
     :root{ --bg:#f5f7fa; --card:#ffffff; --text:#1e293b; --sub:#475569; --accent:#2563eb; --good:#16a34a; --bad:#dc2626; --muted:#cbd5e1; }
     *{box-sizing:border-box}
@@ -18,7 +19,7 @@
     .col{flex:1 1 320px}
     label{display:block;margin-bottom:8px;color:#334155}
     input[type="text"],select{width:100%;padding:12px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:var(--text)}
-    .btn{display:inline-flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;border:1px solid #cbd5e1;background:#f1f5f9;color:#1e293b;text-decoration:none;cursor:pointer;font-weight:600;transition:all .2s ease}
+    .btn{display:inline-flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;border:1px solid #cbd5e1;background:#f1f5f9;color:var(--text);text-decoration:none;cursor:pointer;font-weight:600;transition:all .2s ease}
     .btn:hover{background:#e2e8f0;border-color:#94a3b8}
     .btn[disabled]{opacity:.5;cursor:not-allowed}
     .btn.primary{border-color:#2563eb;background:#2563eb;color:#fff}
@@ -56,14 +57,14 @@
 </head>
 <body>
   <div class="container">
-    <div class="card" id="view-home">
+    <div class="card" id="view-home" role="region" aria-label="首頁">
       <div class="topbar">
         <div>
           <h1 style="display:inline-block;margin-right:8px">農藝丙級術科識別線上模擬測驗</h1>
           <span class="badge" id="badgeVersion">ver —</span>
         </div>
         <div class="toolbar">
-          <button id="btnExportQ" class="btn" title="下載目前題庫 questions.json">匯出題庫 JSON</button>
+          <button id="btnExportQ" class="btn" title="下載目前題庫為 questions.json">匯出題庫 JSON</button>
         </div>
       </div>
 
@@ -129,7 +130,7 @@
       </div>
     </div>
 
-    <div id="view-quiz" class="card" style="display:none">
+    <div id="view-quiz" class="card" style="display:none" role="region" aria-label="作答畫面">
       <div class="topbar">
         <div>
           <span class="badge" id="badgeType"></span>
@@ -156,7 +157,7 @@
       </div>
     </div>
 
-    <div id="view-result" class="card" style="display:none">
+    <div id="view-result" class="card" style="display:none" role="region" aria-label="結果頁">
       <h2>測驗結果</h2>
       <p>
         <span class="badge" id="resName"></span>
@@ -215,27 +216,34 @@
   const getBoard=()=>{ try{return JSON.parse(localStorage.getItem(STORAGE.board)||'[]');}catch{return [];} };
   const pushBoard=(rec)=>{ const arr=getBoard(); arr.push(rec); arr.sort((a,b)=>b.score-a.score); localStorage.setItem(STORAGE.board, JSON.stringify(arr.slice(0,50))); };
 
-  // ========= Firebase API（已替換為你的專案） =========
+  // ========= Firebase API（請把 <YOUR_PROJECT_ID> 換成實際專案 ID） =========
   const API_BASE = 'https://asia-east1-agri-plant-quiz.cloudfunctions.net/api';
-  let CLOUD_OK = false;
+let CLOUD_OK = false; // 若雲端不可用，排行榜與送分將自動退回本機
   async function cloudSubmitScore(record){
-    try{
-      if(!CLOUD_OK) return null;
-      const res = await fetch(API_BASE + '/submit', {
-        method:'POST', mode:'cors', headers:{'Content-Type':'application/json'},
+  try{
+    if(!CLOUD_OK) return null; // 雲端未連線時直接略過
+    const res = await fetch(API_BASE + '/submit', {
+      method:'POST', mode:'cors', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ name:record.name, type:record.type, score:Number(record.score), version:record.version })
+    });
+    if(!res.ok) throw new Error('submit failed '+res.status);
+    return await res.json();
+  }catch(e){ console.warn('submit error', e); return null; }
+},
         body: JSON.stringify({ name:record.name, type:record.type, score:Number(record.score), version:record.version })
       });
-      if(!res.ok) throw new Error('submit failed '+res.status);
+      if(!res.ok) throw new Error('submit failed');
       return await res.json();
     }catch(e){ console.warn('submit error', e); return null; }
   }
   async function cloudFetchTop10(){
-    try{
-      if(!CLOUD_OK) return [];
-      const res = await fetch(API_BASE + '/top10', {mode:'cors'});
-      if(!res.ok) throw new Error('fetch top10 failed '+res.status);
-      return await res.json();
-    }catch(e){ console.warn('top10 error', e); return []; }
+  try{
+    if(!CLOUD_OK) return [];
+    const res = await fetch(API_BASE + '/top10', {mode:'cors'});
+    if(!res.ok) throw new Error('fetch top10 failed '+res.status);
+    return await res.json();
+  }catch(e){ console.warn('top10 error', e); return []; }
+}catch(e){ console.warn('top10 error', e); return []; }
   }
 
   // ========= 題庫匯出 =========
@@ -264,6 +272,10 @@
   function updateStartBtn(){ const ok=$('#username').value.trim() && $('#testType').value; $('#btnStart').disabled=!ok; }
   $('#username').addEventListener('input', updateStartBtn);
   $('#testType').addEventListener('change', updateStartBtn);
+    // 針對自動帶入（瀏覽器記住/密碼管理）狀況，初始化時就檢查一次
+    updateStartBtn();
+    // 某些瀏覽器的自動填入在 visibilitychange 後才寫入，保險再檢查一次
+    document.addEventListener('visibilitychange', ()=>{ setTimeout(updateStartBtn, 300); });
   $('#btnDemo').addEventListener('click',()=>{ $('#username').value=$('#username').value||'DEMO'; $('#testType').value=$('#testType').value||'A'; startQuiz(true); });
   $('#btnStart').addEventListener('click',()=> startQuiz(false));
 
@@ -308,8 +320,8 @@
   function renderQuestion(){
     const q=STATE.questions[STATE.idx]; const total=STATE.questions.length;
     const html=`<div class="topbar" style="margin:6px 0 10px"><div class="badge">第 ${STATE.idx+1} / ${total} 題</div></div>
-      <img class="quiz-img" src="${q.image}" alt="試題圖片" onerror="this.src='https://placehold.co/900x600?text=Image'">
-      <div class="choices" role="group" aria-label="選項">${q.options.map((opt,i)=>{ const id=\`opt${STATE.idx}_${i}\`; const checked=q.your===opt?'checked':''; return `<label class="choice"><input type="radio" name="q${STATE.idx}" id="${id}" value="${opt}" ${checked}> <span>${opt}</span></label>`; }).join('')}</div>`;
+      <img class=\"quiz-img\" src=\"${q.image}\" alt=\"試題圖片\" onerror=\"this.src='https://placehold.co/900x600?text=Image'\">
+      <div class=\"choices\" role=\"group\" aria-label=\"選項\">${q.options.map((opt,i)=>{ const id=\`opt${STATE.idx}_${i}\`; const checked=q.your===opt?'checked':''; return `<label class=\"choice\"><input type=\"radio\" name=\"q${STATE.idx}\" id=\"${id}\" value=\"${opt}\" ${checked}> <span>${opt}</span></label>`; }).join('')}</div>`;
     $('#qwrap').innerHTML=html;
     $$('#qwrap input[type=radio]').forEach(el=>el.addEventListener('change',(e)=>{ STATE.questions[STATE.idx].your=e.target.value; renderPalette(); saveState(); }));
     $('#btnPrev').disabled=STATE.idx===0; $('#btnNext').disabled=STATE.idx===total-1;
@@ -355,8 +367,13 @@
 
   // ========= 排行榜渲染（雲端優先，失敗落回本機） =========
   async function renderBoard(){
-    let data = [];
-    try{ if(CLOUD_OK) data = await cloudFetchTop10(); }catch{}
+  let data = [];
+  try{ if(CLOUD_OK) data = await cloudFetchTop10(); }catch{}
+  if(!data || !data.length){ data = getBoard(); }
+  const tb=$('#boardBody'); tb.innerHTML='';
+  if(!data.length){ tb.innerHTML='<tr><td colspan="6" class="muted">尚無資料</td></tr>'; return; }
+  data.slice(0,10).forEach((r,i)=>{ const tr=document.createElement('tr'); const t=new Date(r.ts||Date.now()); tr.innerHTML=`<td>${i+1}</td><td>${r.name||''}</td><td>${r.type||''}</td><td>${(typeof r.score==='number')? r.score.toFixed(2): r.score}</td><td>${t.toLocaleString()}</td><td>${r.version||''}</td>`; tb.appendChild(tr); });
+}catch{}
     if(!data || !data.length){ data = getBoard(); }
     const tb=$('#boardBody'); tb.innerHTML='';
     if(!data.length){ tb.innerHTML='<tr><td colspan="6" class="muted">尚無資料</td></tr>'; return; }
@@ -365,24 +382,20 @@
 
   // ========= 初始化 =========
   (async function init(){
-    await loadQuestions();
-    $('#badgeVersion').textContent='ver '+QUIZ_VERSION;
-    // 啟動雲端自檢：可用則顯示綠色，失敗則進入本機模式
-    try{
-      const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), 6000);
-      const ping = await fetch(API_BASE + '/top10', {mode:'cors', signal: ctl.signal});
-      clearTimeout(t);
-      if(ping.ok){ CLOUD_OK = true; $('#cloudBadge').textContent='雲端：連線正常'; $('#cloudBadge').style.background='#dcfce7'; }
-      else { CLOUD_OK=false; $('#cloudBadge').textContent='雲端：未連線（改用本機）'; $('#cloudBadge').style.background='#fee2e2'; }
-    }catch(e){ CLOUD_OK=false; $('#cloudBadge').textContent='雲端：未連線（改用本機）'; $('#cloudBadge').style.background='#fee2e2'; console.warn('Cloud unreachable', e); }
-    renderPeople();
-    renderBoard();
-    showResumeIfAny();
-    // 啟用首頁按鈕狀態
-    const updateStartBtn=()=>{ const ok=$('#username').value.trim() && $('#testType').value; $('#btnStart').disabled=!ok; };
-    $('#username').addEventListener('input', updateStartBtn);
-    $('#testType').addEventListener('change', updateStartBtn);
-  })();
+  await loadQuestions();
+  $('#badgeVersion').textContent='ver '+QUIZ_VERSION;
+  // 啟動雲端自檢：可用則顯示綠色，失敗則進入本機模式
+  try{
+    const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), 6000);
+    const ping = await fetch(API_BASE + '/top10', {mode:'cors', signal: ctl.signal});
+    clearTimeout(t);
+    if(ping.ok){ CLOUD_OK = true; $('#cloudBadge').textContent='雲端：連線正常'; $('#cloudBadge').style.background='#dcfce7'; }
+    else { CLOUD_OK=false; $('#cloudBadge').textContent='雲端：未連線（改用本機）'; $('#cloudBadge').style.background='#fee2e2'; }
+  }catch(e){ CLOUD_OK=false; $('#cloudBadge').textContent='雲端：未連線（改用本機）'; $('#cloudBadge').style.background='#fee2e2'; console.warn('Cloud unreachable', e); }
+  renderPeople();
+  renderBoard();
+  showResumeIfAny();
+})();
   </script>
 </body>
 </html>
