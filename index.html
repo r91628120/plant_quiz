@@ -54,6 +54,7 @@
     @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
     .hint{font-size:12px;color:#b91c1c;margin-left:10px}
     @media (max-width:720px){.grid.columns-2{grid-template-columns:1fr}}
+    .debug{white-space:pre-wrap;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:10px;color:#0f172a}
   </style>
 </head>
 <body>
@@ -70,16 +71,12 @@
         </div>
       </div>
 
-      <div id="resumeBar" class="notice" style="display:none;margin-bottom:12px">
-        偵測到尚未完成的測驗進度（<span id="resumeInfo"></span>）。
-        <div class="toolbar" style="margin-top:8px">
-          <button id="btnResume" class="btn primary">繼續作答</button>
-          <button id="btnDiscard" class="btn">放棄本次測驗</button>
-        </div>
-      </div>
-
       <p class="muted">本頁會優先從 <code>GCS</code> 讀取題庫；失敗時回退到同層 <code>questions.json</code>，安全、免金鑰，可直接部署在 GitHub Pages。</p>
-      <div class="row">
+
+      <!-- Debug Box -->
+      <div id="debugBox" class="debug">🛠 載入狀態：初始化中…</div>
+
+      <div class="row" style="margin-top:12px">
         <div class="col">
           <label for="username">請輸入姓名或代號</label>
           <input id="username" type="text" placeholder="例如：王小明 / YZ001" />
@@ -184,23 +181,30 @@
   const download=(filename,text,type='application/json;charset=utf-8')=>{const blob=new Blob([text],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
   const toView=(id)=>['#view-home','#view-quiz','#view-result'].forEach(v=>$(v).style.display=(v===id)?'block':'none');
 
-  // ========= 題庫：GCS + 本地 fallback =========
+  // ========= 題庫：GCS + 本地 fallback（含 Debug） =========
   let QUIZ_VERSION='v1.0.0', BANK_A=[], BANK_B1=[], BANK_B2=[];
   const Q_GCS_URL = 'https://storage.googleapis.com/agri_plant_quiz/questions.json';
+  function dbg(msg){ const el=$('#debugBox'); el.textContent = (el.textContent? el.textContent + '\\n' : '') + msg; console.log('[DEBUG]', msg); }
   async function loadQuestions(){
     const urls=[ Q_GCS_URL + '?t=' + Date.now(), 'questions.json?t=' + Date.now() ];
     let lastErr=null, obj=null;
     for(const u of urls){
       try{
+        dbg('嘗試載入：' + u);
         const res=await fetch(u, { cache:'no-store' });
+        dbg('HTTP 狀態：' + res.status);
         if(!res.ok) throw new Error('HTTP '+res.status);
-        obj=await res.json(); break;
-      }catch(e){ lastErr=e; }
+        obj=await res.json();
+        break;
+      }catch(e){ lastErr=e; dbg('載入失敗：' + e.message); }
     }
-    if(!obj) throw lastErr || new Error('無法載入題庫');
+    if(!obj){ dbg('❌ 無法載入題庫'); throw lastErr || new Error('無法載入題庫'); }
     if(obj.version) QUIZ_VERSION=obj.version;
     BANK_A=Array.isArray(obj.A)?obj.A:[]; BANK_B1=Array.isArray(obj.B1)?obj.B1:[]; BANK_B2=Array.isArray(obj.B2)?obj.B2:[];
     $('#badgeVersion').textContent='ver '+QUIZ_VERSION;
+    dbg(`✅ 題庫載入成功：ver ${QUIZ_VERSION}，A=${BANK_A.length}，B1=${BANK_B1.length}，B2=${BANK_B2.length}`);
+    // 啟用按鈕（雙保險）
+    ['#btnStart','#btnDemo'].forEach(sel=>{ const b=$(sel); if(b) b.removeAttribute('disabled'); });
     return obj;
   }
 
@@ -349,22 +353,23 @@
     if(!$('#testType').value) $('#testType').value='A';
     return window.__startClicked();
   };
-  document.getElementById('btnStart')?.addEventListener('click', ()=>window.__startClicked());
-  document.getElementById('btnDemo')?.addEventListener('click', ()=>window.__startDemo());
+  document.addEventListener('click',(e)=>{ // 事件委派備援
+    if(e.target && e.target.id==='btnStart') window.__startClicked?.();
+    if(e.target && e.target.id==='btnDemo') window.__startDemo?.();
+  });
 
   // ========= 初始化 =========
   (async function init(){
-    // 預載題庫（顯示版本號）；失敗也不擋開始
-    try{ await loadQuestions(); }catch(e){ console.warn('無法預載題庫：', e); }
+    try{ await loadQuestions(); }catch(e){ dbg('初始化讀題失敗：' + e.message); }
     renderPeople();
     // 檢查雲端狀態徽章
     try{
       const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(), 6000);
-      const res=await fetch(API_BASE + '/top10', {mode:'cors', signal:ctl.signal});
+      const res=await fetch('https://asia-east1-agri-plant-quiz.cloudfunctions.net/api/top10', {mode:'cors', signal:ctl.signal});
       clearTimeout(t);
       if(res.ok){ CLOUD_OK=true; $('#cloudBadge').textContent='雲端：連線正常'; $('#cloudBadge').style.background='#dcfce7'; }
       else { CLOUD_OK=false; $('#cloudBadge').textContent='雲端：未連線（改用本機）'; $('#cloudBadge').style.background='#fee2e2'; }
-    }catch(e){ CLOUD_OK=false; $('#cloudBadge').textContent='雲端：未連線（改用本機）'; $('#cloudBadge').style.background='#fee2e2'; console.warn('Cloud unreachable', e); }
+    }catch(e){ CLOUD_OK=false; $('#cloudBadge').textContent='雲端：未連線（改用本機）'; $('#cloudBadge').style.background='#fee2e2'; dbg('雲端不可達：' + e.message); }
     await renderBoard();
   })();
   </script>
