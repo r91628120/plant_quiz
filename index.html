@@ -17,7 +17,7 @@
     .row{display:flex;flex-wrap:wrap;gap:16px}
     .col{flex:1 1 320px}
     label{display:block;margin-bottom:8px;color:#334155}
-    input[type="text"],select{width:100%;padding:12px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:var(--text)}
+    input[type="text"],select{width:100%;padding:12px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:#1e293b}
     .btn{display:inline-flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;border:1px solid #cbd5e1;background:#f1f5f9;color:#1e293b;text-decoration:none;cursor:pointer;font-weight:600;transition:all .2s ease}
     .btn:hover{background:#e2e8f0;border-color:#94a3b8}
     .btn.primary{border-color:#2563eb;background:#2563eb;color:#fff}
@@ -78,7 +78,7 @@
         </div>
       </div>
 
-      <p class="muted">本頁會自動從同目錄 <code>questions.json</code> 載入題庫，安全無金鑰；部署於 GitHub Pages 可直接使用。</p>
+      <p class="muted">本頁會優先從 <code>GCS</code> 讀取題庫；失敗時回退到同層 <code>questions.json</code>，安全、免金鑰，可直接部署在 GitHub Pages。</p>
       <div class="row">
         <div class="col">
           <label for="username">請輸入姓名或代號</label>
@@ -184,19 +184,27 @@
   const download=(filename,text,type='application/json;charset=utf-8')=>{const blob=new Blob([text],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
   const toView=(id)=>['#view-home','#view-quiz','#view-result'].forEach(v=>$(v).style.display=(v===id)?'block':'none');
 
-  // ========= 題庫 =========
+  // ========= 題庫：GCS + 本地 fallback =========
   let QUIZ_VERSION='v1.0.0', BANK_A=[], BANK_B1=[], BANK_B2=[];
+  const Q_GCS_URL = 'https://storage.googleapis.com/agri_plant_quiz/questions.json';
   async function loadQuestions(){
-    const res = await fetch('questions.json?ts='+Date.now(), { cache:'no-store' });
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const obj=await res.json();
+    const urls=[ Q_GCS_URL + '?t=' + Date.now(), 'questions.json?t=' + Date.now() ];
+    let lastErr=null, obj=null;
+    for(const u of urls){
+      try{
+        const res=await fetch(u, { cache:'no-store' });
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        obj=await res.json(); break;
+      }catch(e){ lastErr=e; }
+    }
+    if(!obj) throw lastErr || new Error('無法載入題庫');
     if(obj.version) QUIZ_VERSION=obj.version;
     BANK_A=Array.isArray(obj.A)?obj.A:[]; BANK_B1=Array.isArray(obj.B1)?obj.B1:[]; BANK_B2=Array.isArray(obj.B2)?obj.B2:[];
     $('#badgeVersion').textContent='ver '+QUIZ_VERSION;
     return obj;
   }
 
-  // ========= 本機統計/排行榜 =========
+  // ========= 本機統計/排行榜（Demo 或雲端備援） =========
   const STORAGE = { state:'agri_quiz_state', people:'agri_quiz_people', board:'agri_quiz_board' };
   const getPeople=()=>parseInt(localStorage.getItem(STORAGE.people)||'0',10);
   const setPeople=(n)=>localStorage.setItem(STORAGE.people,String(n));
@@ -226,7 +234,6 @@
       return await res.json();
     }catch(e){ console.warn('top10 error', e); return []; }
   }
-
   async function renderBoard(){
     let data = [];
     try{ if(CLOUD_OK) data = await cloudFetchTop10(); }catch{}
