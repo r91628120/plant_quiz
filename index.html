@@ -21,6 +21,7 @@ input,select{padding:12px;border:1px solid #cbd5e1;border-radius:10px}
 .quiz-img{width:100%;max-height:360px;object-fit:contain;border-radius:12px;background:#f8fafc;border:1px solid #e5e7eb}
 .choice{display:flex;gap:8px;padding:10px;border:1px solid #e5e7eb;border-radius:10px;background:#f8fafc;cursor:pointer}
 .choice:hover{background:#eef2ff}
+.choice b{min-width:1.6em;display:inline-block}
 .palette{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .palette button{width:34px;height:34px;border:1px solid #cbd5e1;border-radius:10px;background:#f1f5f9}
 .palette button.answered{border-color:#2563eb;background:#dbeafe}
@@ -94,64 +95,47 @@ table{width:100%;border-collapse:collapse} th,td{padding:10px;border-bottom:1px 
 </div>
 
 <script>
-/* 小工具 */
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const shuffle=a=>a.map(x=>[Math.random(),x]).sort((x,y)=>x[0]-y[0]).map(x=>x[1]);
 const sample=(a,n)=>shuffle(a).slice(0,Math.min(n,a.length));
 const toView=id=>['#view-home','#view-quiz','#view-result'].forEach(v=>$(v).style.display=(v===id)?'block':'none');
 
-/* 題庫：優先 GCS -> 回退本地 */
 let QUIZ_VERSION='—', BANK_A=[], BANK_B1=[], BANK_B2=[];
-const Q_GCS_URL='https://storage.googleapis.com/agri_plant_quiz/questions.json'; // 可改空字串以完全走本地
+const Q_GCS_URL='https://storage.googleapis.com/agri_plant_quiz/questions.json';
 
 async function loadQuestions(){
-  const urls=[];
-  if(Q_GCS_URL) urls.push(Q_GCS_URL);
-  urls.push('questions.json');
+  const urls=[]; if(Q_GCS_URL) urls.push(Q_GCS_URL); urls.push('questions.json');
   let obj=null, src='';
   for(const u of urls){
-    try{
-      const r=await fetch(u+'?t='+Date.now(),{cache:'no-store'});
-      if(!r.ok) throw new Error(r.status);
-      obj=await r.json(); src=u; break;
-    }catch(e){/* try next */}
-  }
+    try{ const r=await fetch(u+'?t='+Date.now(),{cache:'no-store'}); if(!r.ok) throw new Error(r.status);
+      obj=await r.json(); src=u; break; }catch(e){}}
   if(!obj) throw new Error('題庫載入失敗');
-  QUIZ_VERSION=obj.version||QUIZ_VERSION;
-  BANK_A=obj.A||[]; BANK_B1=obj.B1||[]; BANK_B2=obj.B2||[];
-  $('#ver').textContent='ver '+QUIZ_VERSION;
-  $('#cloud').textContent='來源：'+(src.includes('googleapis')?'GCS':'本地');
+  QUIZ_VERSION=obj.version||QUIZ_VERSION; BANK_A=obj.A||[]; BANK_B1=obj.B1||[]; BANK_B2=obj.B2||[];
+  $('#ver').textContent='ver '+QUIZ_VERSION; $('#cloud').textContent='來源：'+(src.includes('googleapis')?'GCS':'本地');
 }
 
-/* 累計測驗人數（localStorage） */
 const PEOPLE_KEY='agri_quiz_people';
 const getPeople=()=>Number(localStorage.getItem(PEOPLE_KEY)||0);
 const setPeople=n=>localStorage.setItem(PEOPLE_KEY,String(n));
 const renderPeople=()=>$('#peopleCount').textContent='目前累計測驗人數：'+String(getPeople()).padStart(6,'0')+' 人';
 
-/* 建卷與狀態 */
 const STATE={user:'',type:'A',qs:[],i:0,left:20*60,score:0}; let timer=null;
 
 function build(type,{demo=false}={}){
   const bank=(type==='A')?[...BANK_A]:[...BANK_B1,...BANK_B2];
   const need=demo?10:(type==='A'?50:40);
   const picked=sample(bank,need), names=bank.map(x=>x.name);
-  return picked.map(q=>{
-    const wrong=sample(names.filter(n=>n!==q.name),3);
-    const opts=shuffle([q.name,...wrong]);
-    return {img:q.image,a:q.name,ops:opts,y:null};
-  });
+  return picked.map(q=>{const wrong=sample(names.filter(n=>n!==q.name),3); const opts=shuffle([q.name,...wrong]);
+    return {img:q.image,a:q.name,ops:opts,y:null};});
 }
 
-/* UI */
-function renderProgress(){const p=((STATE.i+1)/STATE.qs.length)*100;$('#bar').style.width=p+'%'}
+function renderProgress(){const p=((STATE.i+1)/STATE.qs.length)*100;$('#bar').style.width=p+'%';}
 function renderQ(){
-  const q=STATE.qs[STATE.i], total=STATE.qs.length;
-  $('#qwrap').innerHTML=`
-    <div class="badge">第 ${STATE.i+1}/${total} 題</div>
+  const q=STATE.qs[STATE.i], total=STATE.qs.length; const letters=['A','B','C','D'];
+  $('#qwrap').innerHTML=`<div class="badge">第 ${STATE.i+1}/${total} 題</div>
     <img class="quiz-img" src="${q.img}" onerror="this.src='https://placehold.co/900x600?text=Image'">
     <div style="display:grid;gap:8px;margin-top:10px">
-      ${q.ops.map((t)=>`<label class="choice"><input type="radio" name="q${STATE.i}" value="${t}" ${q.y===t?'checked':''}> ${t}</label>`).join('')}
+      ${q.ops.map((t,i)=>`<label class="choice"><input type="radio" name="q${STATE.i}" value="${t}" ${q.y===t?'checked':''}> <b>${letters[i]}.</b> ${t}</label>`).join('')}
     </div>`;
   $$(`#qwrap input[type=radio]`).forEach(el=>el.onchange=e=>{STATE.qs[STATE.i].y=e.target.value;renderPalette()});
   $('#prev').disabled=(STATE.i===0); $('#next').disabled=(STATE.i===total-1);
@@ -161,74 +145,33 @@ function renderPalette(){
   STATE.qs.forEach((q,i)=>{const b=document.createElement('button');b.textContent=i+1;if(q.y)b.classList.add('answered');b.onclick=()=>{STATE.i=i;renderQ();renderProgress()};f.appendChild(b)});
   const p=$('#palette');p.innerHTML='';p.appendChild(f);
 }
-function startTimer(){
-  clearInterval(timer);
-  timer=setInterval(()=>{
-    STATE.left--;
-    const m=Math.floor(STATE.left/60), s=STATE.left%60;
-    $('#timer').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    if(STATE.left<=0){clearInterval(timer);submit()}
-  },1000);
-}
+function startTimer(){clearInterval(timer);timer=setInterval(()=>{STATE.left--;const m=Math.floor(STATE.left/60), s=STATE.left%60;
+  $('#timer').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;if(STATE.left<=0){clearInterval(timer);submit()}},1000);}
 
-/* 成績 */
-function submit(){
-  clearInterval(timer);
-  let ok=0, per=(STATE.type==='A')?2:2.5;
-  STATE.qs.forEach(q=>{if(q.y===q.a) ok++});
-  STATE.score=+(ok*per).toFixed(2);
-  $('#rName').textContent='應試者：'+STATE.user;
-  $('#rType').textContent='類別：'+(STATE.type==='A'?'A 認識作物':'B 病蟲草害');
-  $('#rScore').textContent='得分：'+STATE.score+' 分';
-  $('#rVer').textContent='ver '+QUIZ_VERSION;
-  const body=document.createDocumentFragment();
-  STATE.qs.forEach((q,i)=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${i+1}</td>
-      <td><img src="${q.img}" style="width:120px;height:80px;object-fit:cover;border:1px solid #e5e7eb;border-radius:8px" onerror="this.src='https://placehold.co/240x160'"></td>
-      <td>${q.y||'<span style="color:#64748b">未作答</span>'}</td>
-      <td>${q.a}</td>
-      <td>${q.y===q.a?'<span style="color:#16a34a">✔</span>':'<span style="color:#dc2626">✘</span>'}</td>`;
-    body.appendChild(tr);
-  });
-  $('#tbody').innerHTML=''; $('#tbody').appendChild(body);
-  toView('#view-result');
-}
+function submit(){clearInterval(timer);let ok=0, per=(STATE.type==='A')?2:2.5; STATE.qs.forEach(q=>{if(q.y===q.a) ok++});
+  STATE.score=+(ok*per).toFixed(2); $('#rName').textContent='應試者：'+STATE.user;
+  $('#rType').textContent='類別：'+(STATE.type==='A'?'A 認識作物':'B 病蟲草害'); $('#rScore').textContent='得分：'+STATE.score+' 分';
+  $('#rVer').textContent='ver '+QUIZ_VERSION; const body=document.createDocumentFragment();
+  STATE.qs.forEach((q,i)=>{const tr=document.createElement('tr');tr.innerHTML=`<td>${i+1}</td>
+    <td><img src="${q.img}" style="width:120px;height:80px;object-fit:cover;border:1px solid #e5e7eb;border-radius:8px" onerror="this.src='https://placehold.co/240x160'"></td>
+    <td>${q.y||'<span style="color:#64748b">未作答</span>'}</td><td>${q.a}</td>
+    <td>${q.y===q.a?'<span style="color:#16a34a">✔</span>':'<span style="color:#dc2626">✘</span>'}</td>`;body.appendChild(tr);});
+  $('#tbody').innerHTML=''; $('#tbody').appendChild(body); toView('#view-result');}
 
-/* 驗證與啟動 */
-function validate(){const n=$('#username').value.trim(),t=$('#type').value;const h=$('#startHint');h.textContent='';if(!n||!t){h.textContent=(!n&&!t)?'請輸入姓名並選擇類別':(!n?'請輸入姓名':'請選擇類別');$('#btnStart').classList.add('shake');setTimeout(()=>$('#btnStart').classList.remove('shake'),320);return false}return true}
+function validate(){const n=$('#username').value.trim(),t=$('#type').value;const h=$('#startHint');h.textContent='';
+  if(!n||!t){h.textContent=(!n&&!t)?'請輸入姓名並選擇類別':(!n?'請輸入姓名':'請選擇類別');$('#btnStart').classList.add('shake');setTimeout(()=>$('#btnStart').classList.remove('shake'),320);return false}return true}
 
 document.addEventListener('DOMContentLoaded', async ()=>{
-  try{await loadQuestions()}catch(e){alert('題庫載入失敗：'+e.message)}
-  renderPeople();
-
-  $('#btnStart').onclick=()=>{
-    if(!validate()) return;
-    // 開始測驗 → 計入人數
-    setPeople(getPeople()+1); renderPeople();
-
-    const n=$('#username').value.trim(), t=$('#type').value;
-    STATE.user=n; STATE.type=t; STATE.qs=build(t); STATE.i=0; STATE.left=20*60;
-    $('#bType').textContent=(t==='A'?'A 認識作物':'B 病蟲草害');
-    $('#bName').textContent=n; $('#bVer').textContent='ver '+QUIZ_VERSION;
-    toView('#view-quiz'); renderQ(); renderPalette(); renderProgress(); startTimer();
-  };
-
-  $('#btnDemo').onclick=()=>{
-    $('#username').value='DEMO'; $('#type').value='A';
-    // DEMO 也計入一次（如不想計入可註解掉）
-    setPeople(getPeople()+1); renderPeople();
-
-    STATE.user='DEMO'; STATE.type='A'; STATE.qs=build('A',{demo:true}); STATE.i=0; STATE.left=10*60;
-    $('#bType').textContent='A 認識作物'; $('#bName').textContent='DEMO'; $('#bVer').textContent='ver '+QUIZ_VERSION;
-    toView('#view-quiz'); renderQ(); renderPalette(); renderProgress(); startTimer();
-  };
-
+  try{await loadQuestions()}catch(e){alert('題庫載入失敗：'+e.message)} renderPeople();
+  $('#btnStart').onclick=()=>{if(!validate()) return;setPeople(getPeople()+1);renderPeople();const n=$('#username').value.trim(),t=$('#type').value;
+    STATE.user=n;STATE.type=t;STATE.qs=build(t);STATE.i=0;STATE.left=20*60;$('#bType').textContent=(t==='A'?'A 認識作物':'B 病蟲草害');
+    $('#bName').textContent=n;$('#bVer').textContent='ver '+QUIZ_VERSION;toView('#view-quiz');renderQ();renderPalette();renderProgress();startTimer();};
+  $('#btnDemo').onclick=()=>{$('#username').value='DEMO';$('#type').value='A';setPeople(getPeople()+1);renderPeople();
+    STATE.user='DEMO';STATE.type='A';STATE.qs=build('A',{demo:true});STATE.i=0;STATE.left=10*60;$('#bType').textContent='A 認識作物';
+    $('#bName').textContent='DEMO';$('#bVer').textContent='ver '+QUIZ_VERSION;toView('#view-quiz');renderQ();renderPalette();renderProgress();startTimer();};
   $('#prev').onclick=()=>{STATE.i=Math.max(0,STATE.i-1);renderQ();renderProgress()}
   $('#next').onclick=()=>{STATE.i=Math.min(STATE.qs.length-1,STATE.i+1);renderQ();renderProgress()}
-  $('#submit').onclick=submit;
-  $('#again').onclick=()=>{toView('#view-home')};
-});
+  $('#submit').onclick=submit; $('#again').onclick=()=>{toView('#view-home')};});
 </script>
 </body>
 </html>
