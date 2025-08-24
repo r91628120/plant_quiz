@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>農藝丙級（診斷版）</title>
+<style>
+body{font-family:system-ui,Segoe UI,Arial,"Noto Sans TC";margin:0;background:#f7fafc;color:#1e293b}
+.wrap{max-width:960px;margin:0 auto;padding:20px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+h1{margin:0 0 12px;font-size:24px}
+.btn{display:inline-block;padding:10px 14px;border-radius:10px;border:1px solid #cbd5e1;background:#f1f5f9;cursor:pointer;font-weight:600}
+.btn:hover{background:#e2e8f0}
+.badge{display:inline-block;background:#e2e8f0;border:1px solid #cbd5e1;border-radius:999px;padding:3px 10px;margin-right:6px}
+pre{background:#0f172a;color:#e2e8f0;border-radius:10px;padding:12px;overflow:auto;font-size:12px}
+.row{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+input,select{padding:10px;border:1px solid #cbd5e1;border-radius:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>農藝丙級術科識別線上模擬測驗（診斷版）</h1>
+    <div id="status">
+      <span class="badge" id="jsOk">JS：尚未初始化</span>
+      <span class="badge" id="ver">ver —</span>
+      <span class="badge" id="lenA">A:0</span>
+      <span class="badge" id="lenB1">B1:0</span>
+      <span class="badge" id="lenB2">B2:0</span>
+    </div>
+
+    <div class="row" style="margin-top:12px">
+      <button id="testGcs" class="btn">測試抓 GCS JSON</button>
+      <button id="testLocal" class="btn">測試抓本地 JSON</button>
+    </div>
+
+    <div class="row" style="margin-top:12px">
+      <input id="username" placeholder="姓名/代號">
+      <select id="type">
+        <option value="">選類別</option>
+        <option value="A">A 認識作物</option>
+        <option value="B">B 病蟲草害</option>
+      </select>
+      <button id="btnStart" class="btn">▶ 開始測驗（僅測按鈕）</button>
+    </div>
+
+    <h3 style="margin:14px 0 6px">DEBUG 輸出</h3>
+    <pre id="log"></pre>
+  </div>
+</div>
+
+<script>
+const log = (...a)=>{const el=document.getElementById('log');el.textContent += a.map(x=>typeof x==='object'?JSON.stringify(x,null,2):String(x)).join(' ') + '\n'}
+
+let BANK_A=[],BANK_B1=[],BANK_B2=[],QUIZ_VERSION='—';
+
+function paintCounter(){
+  document.getElementById('ver').textContent='ver '+QUIZ_VERSION;
+  document.getElementById('lenA').textContent='A:'+BANK_A.length;
+  document.getElementById('lenB1').textContent='B1:'+BANK_B1.length;
+  document.getElementById('lenB2').textContent='B2:'+BANK_B2.length;
+}
+
+async function fetchJson(url){
+  const r = await fetch(url,{cache:'no-store'});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return await r.json();
+}
+
+async function loadFrom(url,name){
+  try{
+    const o = await fetchJson(url+'?t='+(Date.now()));
+    QUIZ_VERSION = o.version || QUIZ_VERSION;
+    BANK_A = o.A || [];
+    BANK_B1 = o.B1 || [];
+    BANK_B2 = o.B2 || [];
+    paintCounter();
+    log('[OK]', name, '載入成功');
+  }catch(e){
+    log('[ERR]', name, e.message);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('jsOk').textContent='JS：載入成功';
+  log('頁面初始化完成');
+
+  document.getElementById('testGcs').onclick=()=>loadFrom('https://storage.googleapis.com/agri_plant_quiz/questions.json','GCS');
+  document.getElementById('testLocal').onclick=()=>loadFrom('questions.json','Local');
+
+  document.getElementById('btnStart').onclick=()=>{
+    const n=document.getElementById('username').value.trim();
+    const t=document.getElementById('type').value;
+    if(!n||!t){ log('[WARN] 請輸入姓名與選類別'); return; }
+    log('[OK] 按鈕可用，事件已綁定；下一步就能進入正式版流程。');
+    alert('按鈕正常，JS 正常。題庫目前 A:'+BANK_A.length+'，B1:'+BANK_B1.length+'，B2:'+BANK_B2.length);
+  };
+});
+</script>
+</body>
+</html>
