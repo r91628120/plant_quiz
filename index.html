@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>農藝丙級術科識別線上模擬測驗</title>
+  <title>農藝丙級術科識別線上模擬測驗（穩定版｜無排行榜）</title>
   <style>
     :root{ --bg:#f5f7fa; --card:#ffffff; --text:#1e293b; --sub:#475569; --accent:#2563eb; --good:#16a34a; --bad:#dc2626; --muted:#cbd5e1; }
     *{box-sizing:border-box}
@@ -12,8 +12,7 @@
     .container{max-width:1100px;margin:0 auto;padding:24px}
     .card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px;box-shadow:0 4px 12px rgba(0,0,0,.06)}
     h1{font-size:28px;margin:0 0 12px}
-    h2{font-size:20px;color:var(--sub);margin:0 0 12px}
-    p{color:#334155}
+    h2{font-size:20px;color:#64748b;margin:0 0 12px}
     .row{display:flex;flex-wrap:wrap;gap:16px}
     .col{flex:1 1 320px}
     label{display:block;margin-bottom:8px;color:#334155}
@@ -23,57 +22,31 @@
     .btn.primary{border-color:#2563eb;background:#2563eb;color:#fff}
     .btn.primary:hover{background:#3b82f6;border-color:#2563eb}
     .badge{display:inline-block;padding:4px 10px;border-radius:999px;background:#e2e8f0;border:1px solid #cbd5e1;color:#1e293b;font-size:12px}
-    .muted{color:#94a3b8}
-    .grid{display:grid;gap:16px}
-    .grid.columns-2{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
     .progress{height:8px;background:#e2e8f0;border-radius:999px;overflow:hidden}
     .progress>span{display:block;height:100%;background:linear-gradient(90deg,#2563eb,#60a5fa);width:0}
     .quiz-img{width:100%;max-height:360px;object-fit:contain;border-radius:14px;background:#f1f5f9;border:1px solid #cbd5e1}
     .choices{display:grid;gap:10px;margin-top:12px}
     .choice{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:12px;border:1px solid #cbd5e1;background:#f8fafc;cursor:pointer;transition:all .2s ease}
     .choice:hover{background:#e2e8f0}
-    .choice input{transform:translateY(3px)}
-    .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-    .pill{padding:6px 10px;border-radius:10px;background:#f1f5f9;border:1px solid #cbd5e1;color:#1e293b;font-size:12px}
     .palette{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
     .palette button{width:34px;height:34px;border-radius:10px;border:1px solid #cbd5e1;background:#f1f5f9;color:#1e293b;cursor:pointer;transition:all .2s ease}
-    .palette button:hover{background:#e2e8f0}
     .palette button.answered{border-color:#2563eb;background:#dbeafe}
     .palette button.current{outline:2px solid #2563eb}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left}
-    tr:hover td{background:#f1f5f9}
-    .ok{color:var(--good);font-weight:700}
-    .ng{color:var(--bad);font-weight:700}
-    .disclaimer{font-size:12px;color:#64748b}
-    .footer{margin-top:20px;color:#64748b}
-    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-    .notice{padding:10px 12px;border-radius:10px;background:#f1f5f9;border:1px solid #cbd5e1;color:#1e293b}
-    .shake{animation:shake .28s linear 1}
-    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-    .hint{font-size:12px;color:#b91c1c;margin-left:10px}
-    @media (max-width:720px){.grid.columns-2{grid-template-columns:1fr}}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
     .debug{white-space:pre-wrap;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:10px;color:#0f172a}
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- ====== 首頁 ====== -->
     <div class="card" id="view-home">
-      <div class="topbar">
+      <div class="toolbar" style="justify-content:space-between">
         <div>
           <h1 style="display:inline-block;margin-right:8px">農藝丙級術科識別線上模擬測驗</h1>
           <span class="badge" id="badgeVersion">ver —</span>
         </div>
-        <div class="toolbar">
-          <button id="btnExportQ" class="btn" title="下載目前題庫 questions.json">匯出題庫 JSON</button>
-        </div>
+        <button id="btnExportQ" class="btn">匯出題庫 JSON</button>
       </div>
 
-      <p class="muted">本頁會優先從 <code>GCS</code> 讀取題庫；失敗時回退到同層 <code>questions.json</code>，安全、免金鑰，可直接部署在 GitHub Pages。</p>
-
-      <!-- Debug Box -->
       <div id="debugBox" class="debug">🛠 載入狀態：初始化中…</div>
 
       <div class="row" style="margin-top:12px">
@@ -91,287 +64,180 @@
         </div>
       </div>
 
-      <div class="topbar">
-        <div>
-          <span class="badge">目前累計測驗人數</span>
-          <span id="peopleCount" class="badge" style="margin-left:6px;background:#e2e8f0">000000 人</span>
-        </div>
-        <div class="toolbar">
-          <button id="btnStart" class="btn primary" onclick="window.__startClicked && window.__startClicked()">▶ 開始測驗</button>
-          <span id="startHint" class="hint"></span>
-          <button id="btnDemo" class="btn" onclick="window.__startDemo && window.__startDemo()">快速體驗（10 題）</button>
-        </div>
-      </div>
-
-      <div style="margin-top:16px" class="card">
-        <h2>🏆 成績排行榜（TOP 10） <span class="badge" id="cloudBadge" style="margin-left:8px">雲端：檢查中…</span></h2>
-        <div class="disclaimer">雲端排行榜以 Firebase 為主，失敗時顯示本機 Demo。</div>
-        <div style="overflow:auto">
-          <table>
-            <thead>
-              <tr>
-                <th>名次</th><th>姓名/代號</th><th>類別</th><th>分數</th><th>日期</th><th>版本</th>
-              </tr>
-            </thead>
-            <tbody id="boardBody"><tr><td colspan="6" class="muted">尚無資料</td></tr></tbody>
-          </table>
-        </div>
+      <div class="toolbar">
+        <button id="btnStart" class="btn primary">▶ 開始測驗</button>
+        <button id="btnDemo" class="btn">快速體驗（10 題）</button>
       </div>
     </div>
 
-    <!-- ====== 作答頁 ====== -->
     <div id="view-quiz" class="card" style="display:none">
-      <div class="topbar">
+      <div class="toolbar" style="justify-content:space-between">
         <div>
           <span class="badge" id="badgeType"></span>
-          <span class="badge" id="badgeName" style="margin-left:6px"></span>
-          <span class="badge" id="badgeVersion2" style="margin-left:6px"></span>
+          <span class="badge" id="badgeName"></span>
+          <span class="badge" id="badgeVersion2"></span>
         </div>
-        <div class="toolbar">
-          <span class="pill" id="timer">20:00</span>
-          <button class="btn" id="btnSubmit">交卷</button>
-        </div>
+        <div><span class="badge" id="timer">20:00</span></div>
       </div>
-      <div class="progress" aria-hidden="true"><span id="bar"></span></div>
+      <div class="progress"><span id="bar"></span></div>
       <div id="qwrap" style="margin-top:12px"></div>
       <div class="toolbar">
         <button class="btn" id="btnPrev">← 上一題</button>
         <button class="btn" id="btnNext">下一題 →</button>
+        <button class="btn primary" id="btnSubmit">交卷</button>
       </div>
-      <div style="margin-top:10px">
-        <div class="badge">題目導覽</div>
-        <div id="palette" class="palette" aria-label="題號導覽"></div>
-      </div>
-      <div class="footer">
-        <div class="disclaimer">說明：可前後閱視作答，時間到自動交卷。進度每 5 秒自動儲存，可中斷續答（同版本）。</div>
-      </div>
+      <div class="palette" id="palette"></div>
     </div>
 
-    <!-- ====== 結果頁 ====== -->
     <div id="view-result" class="card" style="display:none">
       <h2>測驗結果</h2>
       <p>
         <span class="badge" id="resName"></span>
-        <span class="badge" id="resType" style="margin-left:6px"></span>
-        <span class="badge" id="resScore" style="margin-left:6px"></span>
-        <span class="badge" id="resPass" style="margin-left:6px"></span>
-        <span class="badge" id="resVersion" style="margin-left:6px"></span>
+        <span class="badge" id="resType"></span>
+        <span class="badge" id="resScore"></span>
+        <span class="badge" id="resPass"></span>
+        <span class="badge" id="resVersion"></span>
       </p>
       <div class="toolbar">
         <button class="btn" id="btnDownloadCSV">下載 CSV</button>
         <button class="btn" id="btnDownloadJSON">下載 JSON</button>
         <button class="btn" id="btnPrint">列印 / 存成 PDF</button>
-        <button class="btn primary" id="btnAgain">回首頁再測一次</button>
+        <button class="btn" id="btnAgain">回首頁再測一次</button>
       </div>
       <div style="margin-top:14px;overflow:auto">
-        <table>
-          <thead><tr><th style="width:72px">題號</th><th>圖片</th><th>你的答案</th><th>正確答案</th><th>判定</th></tr></thead>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr><th style="width:72px;text-align:left">題號</th><th style="text-align:left">圖片</th><th style="text-align:left">你的答案</th><th style="text-align:left">正確答案</th><th style="text-align:left">判定</th></tr></thead>
           <tbody id="resultBody"></tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <script>
-  // ========= 工具 =========
-  const $ = (sel)=>document.querySelector(sel);
-  const $$ = (sel)=>Array.from(document.querySelectorAll(sel));
-  const shuffle = (arr)=>arr.map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
-  const sampleN = (arr,n)=>shuffle(arr).slice(0,Math.min(n,arr.length));
-  const download=(filename,text,type='application/json;charset=utf-8')=>{const blob=new Blob([text],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
-  const toView=(id)=>['#view-home','#view-quiz','#view-result'].forEach(v=>$(v).style.display=(v===id)?'block':'none');
+<script>
+// ========= 小工具 =========
+const $ = (s)=>document.querySelector(s);
+const $$ = (s)=>Array.from(document.querySelectorAll(s));
+const shuffle = (a)=>a.map(x=>[Math.random(),x]).sort((u,v)=>u[0]-v[0]).map(x=>x[1]);
+const sampleN = (a,n)=>shuffle(a).slice(0,Math.min(n,a.length));
+const download=(fn,txt,type='application/json;charset=utf-8')=>{const blob=new Blob([txt],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=fn;a.click();setTimeout(()=>URL.revokeObjectURL(url),1e3);};
+const toView=(id)=>['#view-home','#view-quiz','#view-result'].forEach(v=>$(v).style.display=(v===id)?'block':'none');
+const dbg=(m)=>{ const el=$('#debugBox'); el.textContent+=(el.textContent?'\\n':'')+m; console.log('[DEBUG]',m); };
 
-  // ========= 題庫：GCS + 本地 fallback（含 Debug） =========
-  let QUIZ_VERSION='v1.0.0', BANK_A=[], BANK_B1=[], BANK_B2=[];
-  const Q_GCS_URL = 'https://storage.googleapis.com/agri_plant_quiz/questions.json';
-  function dbg(msg){ const el=$('#debugBox'); el.textContent = (el.textContent? el.textContent + '\\n' : '') + msg; console.log('[DEBUG]', msg); }
-  async function loadQuestions(){
-    const urls=[ Q_GCS_URL + '?t=' + Date.now(), 'questions.json?t=' + Date.now() ];
-    let lastErr=null, obj=null;
-    for(const u of urls){
-      try{
-        dbg('嘗試載入：' + u);
-        const res=await fetch(u, { cache:'no-store' });
-        dbg('HTTP 狀態：' + res.status);
-        if(!res.ok) throw new Error('HTTP '+res.status);
-        obj=await res.json();
-        break;
-      }catch(e){ lastErr=e; dbg('載入失敗：' + e.message); }
-    }
-    if(!obj){ dbg('❌ 無法載入題庫'); throw lastErr || new Error('無法載入題庫'); }
-    if(obj.version) QUIZ_VERSION=obj.version;
-    BANK_A=Array.isArray(obj.A)?obj.A:[]; BANK_B1=Array.isArray(obj.B1)?obj.B1:[]; BANK_B2=Array.isArray(obj.B2)?obj.B2:[];
-    $('#badgeVersion').textContent='ver '+QUIZ_VERSION;
-    dbg(`✅ 題庫載入成功：ver ${QUIZ_VERSION}，A=${BANK_A.length}，B1=${BANK_B1.length}，B2=${BANK_B2.length}`);
-    // 啟用按鈕（雙保險）
-    ['#btnStart','#btnDemo'].forEach(sel=>{ const b=$(sel); if(b) b.removeAttribute('disabled'); });
-    return obj;
-  }
-
-  // ========= 本機統計/排行榜（Demo 或雲端備援） =========
-  const STORAGE = { state:'agri_quiz_state', people:'agri_quiz_people', board:'agri_quiz_board' };
-  const getPeople=()=>parseInt(localStorage.getItem(STORAGE.people)||'0',10);
-  const setPeople=(n)=>localStorage.setItem(STORAGE.people,String(n));
-  const getBoard=()=>{ try{return JSON.parse(localStorage.getItem(STORAGE.board)||'[]');}catch{return [];} };
-  const pushBoard=(rec)=>{ const arr=getBoard(); arr.push(rec); arr.sort((a,b)=>b.score-a.score); localStorage.setItem(STORAGE.board, JSON.stringify(arr.slice(0,50))); };
-  const renderPeople=()=>$('#peopleCount').textContent=String(getPeople()).padStart(6,'0')+' 人';
-
-  // ========= Firebase 雲端（你的專案） =========
-  const API_BASE = 'https://asia-east1-agri-plant-quiz.cloudfunctions.net/api';
-  let CLOUD_OK = false;
-  async function cloudSubmitScore(record){
+// ========= 題庫：GCS + 本地 fallback =========
+let QUIZ_VERSION='v1.0.0', BANK_A=[], BANK_B1=[], BANK_B2=[];
+const Q_GCS_URL = 'https://storage.googleapis.com/agri_plant_quiz/questions.json';
+async function loadQuestions(){
+  const urls=[ Q_GCS_URL + '?t=' + Date.now(), 'questions.json?t=' + Date.now() ];
+  let obj=null, err=null;
+  for(const u of urls){
     try{
-      if(!CLOUD_OK) return null;
-      const res = await fetch(API_BASE + '/submit', {
-        method:'POST', mode:'cors', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ name:record.name, type:record.type, score:Number(record.score), version:record.version })
-      });
-      if(!res.ok) throw new Error('submit failed '+res.status);
-      return await res.json();
-    }catch(e){ console.warn('submit error', e); return null; }
+      dbg('嘗試載入：'+u);
+      const r = await fetch(u, {cache:'no-store'});
+      dbg('HTTP 狀態：'+r.status);
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      obj = await r.json(); break;
+    }catch(e){ err=e; dbg('載入失敗：'+e.message); }
   }
-  async function cloudFetchTop10(){
-    try{
-      if(!CLOUD_OK) return [];
-      const res = await fetch(API_BASE + '/top10', {mode:'cors'});
-      if(!res.ok) throw new Error('fetch top10 failed '+res.status);
-      return await res.json();
-    }catch(e){ console.warn('top10 error', e); return []; }
-  }
-  async function renderBoard(){
-    let data = [];
-    try{ if(CLOUD_OK) data = await cloudFetchTop10(); }catch{}
-    if(!data || !data.length){ data = getBoard(); }
-    const tb=$('#boardBody'); tb.innerHTML='';
-    if(!data.length){ tb.innerHTML='<tr><td colspan="6" class="muted">尚無資料</td></tr>'; return; }
-    data.slice(0,10).forEach((r,i)=>{ const tr=document.createElement('tr'); const t=new Date(r.ts||Date.now()); tr.innerHTML=`<td>${i+1}</td><td>${r.name||''}</td><td>${r.type||''}</td><td>${(typeof r.score==='number')? r.score.toFixed(2): r.score}</td><td>${t.toLocaleString()}</td><td>${r.version||''}</td>`; tb.appendChild(tr); });
-  }
+  if(!obj) throw err || new Error('無法載入題庫');
+  QUIZ_VERSION = obj.version || QUIZ_VERSION;
+  BANK_A = Array.isArray(obj.A)?obj.A:[];
+  BANK_B1= Array.isArray(obj.B1)?obj.B1:[];
+  BANK_B2= Array.isArray(obj.B2)?obj.B2:[];
+  $('#badgeVersion').textContent = 'ver '+QUIZ_VERSION;
+  dbg(`✅ 題庫載入成功：ver ${QUIZ_VERSION}，A=${BANK_A.length}，B1=${BANK_B1.length}，B2=${BANK_B2.length}`);
+}
 
-  // ========= 狀態 =========
-  const STATE={ user:'', type:'', questions:[], idx:0, timerSec:20*60, score:0, startedAt:0 };
-  let timerId=null, autosaveId=null;
-  const saveState=()=>localStorage.setItem(STORAGE.state, JSON.stringify({ ...STATE, version:QUIZ_VERSION }));
-  const clearState=()=>localStorage.removeItem(STORAGE.state);
+// ========= 作答邏輯（無排行榜） =========
+const STATE={ user:'', type:'', questions:[], idx:0, timerSec:20*60, score:0 };
+let timerId=null;
+function buildQuestions(type,{demo=false}={}){
+  const bank=(type==='A')?[...BANK_A]:[...BANK_B1,...BANK_B2];
+  const TARGET=type==='A'?50:40; const count=demo?Math.min(10,bank.length):TARGET;
+  const picked=sampleN(bank,count); const namesAll=bank.map(x=>x.name);
+  return picked.map(q=>{ const wrongs=sampleN(namesAll.filter(n=>n!==q.name),3); const options=shuffle([q.name,...wrongs]); return { image:q.image, options, answer:q.name, your:null }; });
+}
+function renderProgress(){ $('#bar').style.width = ((STATE.idx+1)/STATE.questions.length*100)+'%'; }
+function renderQuestion(){
+  const q=STATE.questions[STATE.idx], total=STATE.questions.length;
+  const html=`<div style="margin:6px 0 10px"><span class="badge">第 ${STATE.idx+1} / ${total} 題</span></div>
+  <img class="quiz-img" src="${q.image}" alt="試題圖片" onerror="this.src='https://placehold.co/900x600?text=Image'">
+  <div class="choices">${q.options.map((opt,i)=>{
+    const id=\`opt${STATE.idx}_${i}\`; const checked=q.your===opt?'checked':'';
+    return \`<label class="choice"><input type="radio" name="q${STATE.idx}" id="${id}" value="${opt}" ${checked}> <span>${opt}</span></label>\`;
+  }).join('')}</div>`;
+  $('#qwrap').innerHTML=html;
+  $$('#qwrap input[type=radio]').forEach(el=>el.addEventListener('change',(e)=>{ STATE.questions[STATE.idx].your=e.target.value; renderPalette(); }));
+  $('#btnPrev').disabled=STATE.idx===0; $('#btnNext').disabled=STATE.idx===total-1;
+}
+function renderPalette(){
+  const frag=document.createDocumentFragment();
+  STATE.questions.forEach((q,i)=>{ const b=document.createElement('button'); b.textContent=i+1; if(q.your) b.classList.add('answered'); if(i===STATE.idx) b.classList.add('current'); b.addEventListener('click',()=>{STATE.idx=i; renderQuestion(); renderProgress();}); frag.appendChild(b); });
+  const p=$('#palette'); p.innerHTML=''; p.appendChild(frag);
+}
+function startTimer(){
+  clearInterval(timerId);
+  timerId=setInterval(()=>{ STATE.timerSec--; if(STATE.timerSec<=0){ STATE.timerSec=0; updateTimer(); clearInterval(timerId); submitQuiz(true);} else updateTimer(); },1000);
+  updateTimer();
+}
+function updateTimer(){ const m=Math.floor(STATE.timerSec/60), s=STATE.timerSec%60; $('#timer').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
+function computeScore(){
+  const per=(STATE.type==='A')?2:2.5; let correct=0;
+  STATE.questions.forEach(q=>{ if(q.your===q.answer) correct++; });
+  STATE.score=+(correct*per).toFixed(2);
+}
+function submitQuiz(auto=false){
+  clearInterval(timerId);
+  computeScore();
+  $('#resName').textContent = `應試者：${STATE.user}`;
+  $('#resType').textContent = `類別：${STATE.type==='A'?'A. 認識作物':'B. 病蟲草害與防治'}`;
+  $('#resScore').textContent = `得分：${STATE.score} 分`;
+  const passEl=$('#resPass'); passEl.textContent=(STATE.score>=60)?'結果：及格':'結果：不及格';
+  $('#resVersion').textContent = 'ver '+QUIZ_VERSION;
+  const tbody=document.createDocumentFragment();
+  STATE.questions.forEach((q,i)=>{ const tr=document.createElement('tr'); const ok=q.your===q.answer; tr.innerHTML=`<td>${i+1}</td><td><img src="${q.image}" style="width:120px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1"></td><td>${q.your||'<span style="color:#64748b">未作答</span>'}</td><td>${q.answer}</td><td>${ ok ? '✔ 正確' : '✘ 錯誤'}</td>`; tbody.appendChild(tr); });
+  $('#resultBody').innerHTML=''; $('#resultBody').appendChild(tbody);
+  toView('#view-result');
+}
 
-  // ========= 題組 =========
-  function buildQuestions(type,{demo=false}={}){
-    const bank=(type==='A')?[...BANK_A]:[...BANK_B1,...BANK_B2];
-    const TARGET=type==='A'?50:40; const count=demo?Math.min(10,bank.length):TARGET;
-    const picked=sampleN(bank,count); const namesAll=bank.map(x=>x.name);
-    return picked.map(q=>{ const wrongs=sampleN(namesAll.filter(n=>n!==q.name),3); const options=shuffle([q.name,...wrongs]); return { image:q.image, options, answer:q.name, your:null }; });
-  }
+// ===== 匯出 =====
+$('#btnExportQ').addEventListener('click',()=>{
+  const obj={version:QUIZ_VERSION,A:BANK_A,B1:BANK_B1,B2:BANK_B2};
+  download(`questions_${QUIZ_VERSION}.json`, JSON.stringify(obj,null,2));
+});
+$('#btnDownloadCSV').addEventListener('click',()=>{
+  const header=['name','type','version','score','index','your','answer','correct','image']; const rows=[];
+  STATE.questions.forEach((q,i)=>rows.push([STATE.user,STATE.type,QUIZ_VERSION,STATE.score,i+1,q.your||'',q.answer,(q.your===q.answer)?'1':'0',q.image]));
+  const lines=[header.join(','), ...rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(','))];
+  download(`agri_quiz_${Date.now()}.csv`, lines.join('\\n'), 'text/csv;charset=utf-8');
+});
+$('#btnDownloadJSON').addEventListener('click',()=>{
+  const obj={ name:STATE.user, type:STATE.type, version:QUIZ_VERSION, score:STATE.score, items:STATE.questions.map((q,i)=>({ index:i+1, your:q.your, answer:q.answer, correct:q.your===q.answer, image:q.image })) };
+  download(`agri_quiz_${Date.now()}.json`, JSON.stringify(obj,null,2));
+});
+$('#btnPrint').addEventListener('click',()=>window.print());
+$('#btnAgain').addEventListener('click',()=>{ toView('#view-home'); });
 
-  // ========= 渲染 =========
-  function renderProgress(){ const percent=((STATE.idx+1)/STATE.questions.length)*100; $('#bar').style.width=percent+'%'; }
-  function renderQuestion(){
-    const q=STATE.questions[STATE.idx]; const total=STATE.questions.length;
-    const html=`<div class="topbar" style="margin:6px 0 10px"><div class="badge">第 ${STATE.idx+1} / ${total} 題</div></div>
-      <img class="quiz-img" src="${q.image}" alt="試題圖片" onerror="this.src='https://placehold.co/900x600?text=Image'">
-      <div class="choices" role="group" aria-label="選項">${q.options.map((opt,i)=>{ const id=\`opt${STATE.idx}_${i}\`; const checked=q.your===opt?'checked':''; return `<label class="choice"><input type="radio" name="q${STATE.idx}" id="${id}" value="${opt}" ${checked}> <span>${opt}</span></label>`; }).join('')}</div>`;
-    $('#qwrap').innerHTML=html;
-    $$('#qwrap input[type=radio]').forEach(el=>el.addEventListener('change',(e)=>{ STATE.questions[STATE.idx].your=e.target.value; renderPalette(); saveState(); }));
-    $('#btnPrev').disabled=STATE.idx===0; $('#btnNext').disabled=STATE.idx===total-1;
-  }
-  function renderPalette(){
-    const frag=document.createDocumentFragment();
-    STATE.questions.forEach((q,i)=>{ const b=document.createElement('button'); b.textContent=i+1; b.title=`前往第 ${i+1} 題`; if(q.your) b.classList.add('answered'); if(i===STATE.idx) b.classList.add('current'); b.addEventListener('click',()=>{ STATE.idx=i; renderQuestion(); renderProgress(); saveState(); }); frag.appendChild(b); });
-    const p=$('#palette'); p.innerHTML=''; p.appendChild(frag);
-  }
-
-  // ========= 計時與交卷 =========
-  function startTimer(){
-    clearInterval(timerId);
-    timerId=setInterval(()=>{
-      STATE.timerSec--; if(STATE.timerSec<=0){ STATE.timerSec=0; updateTimer(); clearInterval(timerId); submitQuiz(true);} else { updateTimer(); }
-    },1000);
-    updateTimer();
-  }
-  function updateTimer(){ const m=Math.floor(STATE.timerSec/60), s=STATE.timerSec%60; $('#timer').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; saveState(); }
-  async function submitQuiz(auto){
-    clearInterval(timerId); clearInterval(autosaveId);
-    const per=(STATE.type==='A')?2:2.5; let correct=0;
-    STATE.questions.forEach(q=>{ if(q.your===q.answer) correct++; });
-    STATE.score=+(correct*per).toFixed(2);
-    setPeople(getPeople()+1); renderPeople();
-    const rec={ name:STATE.user, type:STATE.type, score:STATE.score, version:QUIZ_VERSION, ts:Date.now() };
-    try{ pushBoard(rec); }catch{}
-    try{ await cloudSubmitScore(rec); }catch{}
-    await renderBoard();
-    $('#resName').textContent=`應試者：${STATE.user}`;
-    $('#resType').textContent=`類別：${STATE.type==='A'?'A. 認識作物':'B. 病蟲草害與防治'}`;
-    $('#resScore').textContent=`得分：${STATE.score} 分`;
-    const passEl=$('#resPass'); passEl.textContent=(STATE.score>=60)?'結果：及格':'結果：不及格'; passEl.style.background=(STATE.score>=60)?'#d1fae5':'#fee2e2'; passEl.style.borderColor=(STATE.score>=60)?'#10b981':'#ef4444';
-    $('#resVersion').textContent='ver '+QUIZ_VERSION;
-    const tbody=document.createDocumentFragment();
-    STATE.questions.forEach((q,idx)=>{ const tr=document.createElement('tr'); const ok=q.your===q.answer; tr.innerHTML=`<td>${idx+1}</td><td><img src="${q.image}" alt="題圖" style="width:120px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1" onerror="this.src='https://placehold.co/240x160'"/></td><td>${q.your? q.your : '<span class="muted">未作答</span>'}</td><td>${q.answer}</td><td>${ ok ? '<span class="ok">✔ 正確</span>' : '<span class="ng">✘ 錯誤</span>'}</td>`; tbody.appendChild(tr); });
-    const r=$('#resultBody'); r.innerHTML=''; r.appendChild(tbody);
-    toView('#view-result'); clearState();
-  }
-
-  // ========= 匯出 =========
-  $('#btnExportQ').addEventListener('click',()=>{
-    const obj={version:QUIZ_VERSION,A:BANK_A,B1:BANK_B1,B2:BANK_B2};
-    download(`questions_${QUIZ_VERSION}.json`, JSON.stringify(obj,null,2));
-  });
-  $('#btnDownloadCSV').addEventListener('click',()=>{
-    const header=['name','type','version','score','index','your','answer','correct','image']; const rows=[];
-    STATE.questions.forEach((q,i)=>rows.push([STATE.user,STATE.type,QUIZ_VERSION,STATE.score,i+1,q.your||'',q.answer,(q.your===q.answer)?'1':'0',q.image]));
-    const lines=[header.join(','), ...rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(','))];
-    download(`agri_quiz_${Date.now()}.csv`, lines.join('\\n'), 'text/csv;charset=utf-8');
-  });
-  $('#btnDownloadJSON').addEventListener('click',()=>{
-    const obj={ name:STATE.user, type:STATE.type, version:QUIZ_VERSION, score:STATE.score, items:STATE.questions.map((q,i)=>({ index:i+1, your:q.your, answer:q.answer, correct:q.your===q.answer, image:q.image })) };
-    download(`agri_quiz_${Date.now()}.json`, JSON.stringify(obj,null,2));
-  });
-  $('#btnPrint').addEventListener('click',()=> window.print());
-  $('#btnAgain').addEventListener('click',()=>{ toView('#view-home'); renderPeople(); renderBoard(); });
-
-  // ========= 啟動流程（不依賴 disabled；inline + 事件雙保險） =========
-  function validateAndWarn(){
-    const name=$('#username').value.trim();
-    const type=$('#testType').value;
-    const hint=$('#startHint'); hint.textContent='';
-    if(!name || !type){
-      hint.textContent = (!name && !type)? '請輸入姓名並選擇類別' : (!name? '請輸入姓名' : '請選擇類別');
-      $('#btnStart').classList.add('shake'); setTimeout(()=>$('#btnStart').classList.remove('shake'),300);
-      return false;
-    }
-    return true;
-  }
-  window.__startClicked = async function(){
-    if(!validateAndWarn()) return;
-    try{ if(!BANK_A.length && !BANK_B1.length && !BANK_B2.length) await loadQuestions(); }catch(e){ alert('無法載入題庫'); return; }
-    STATE.user=$('#username').value.trim(); STATE.type=$('#testType').value||'A';
-    STATE.questions=buildQuestions(STATE.type,{demo:false}); STATE.idx=0; STATE.timerSec=20*60; STATE.score=0; STATE.startedAt=Date.now();
-    $('#badgeType').textContent= STATE.type==='A' ? 'A. 認識作物' : 'B. 病蟲草害與防治';
-    $('#badgeName').textContent=STATE.user; $('#badgeVersion2').textContent='ver '+QUIZ_VERSION;
+// ===== 啟動 =====
+async function start(demo=false){
+  try{
+    if(!BANK_A.length && !BANK_B1.length && !BANK_B2.length){ await loadQuestions(); }
+    const name=$('#username').value.trim() || 'DEMO';
+    const type=$('#testType').value || 'A';
+    STATE.user=name; STATE.type=type; STATE.questions=buildQuestions(type,{demo}); STATE.idx=0; STATE.timerSec=20*60; STATE.score=0;
+    $('#badgeType').textContent= (type==='A'?'A. 認識作物':'B. 病蟲草害與防治');
+    $('#badgeName').textContent = name;
+    $('#badgeVersion2').textContent = 'ver ' + QUIZ_VERSION;
     toView('#view-quiz'); renderQuestion(); renderPalette(); renderProgress(); startTimer();
-    clearInterval(autosaveId); autosaveId=setInterval(saveState,5000);
-  };
-  window.__startDemo = async function(){
-    if(!$('#username').value.trim()) $('#username').value='DEMO';
-    if(!$('#testType').value) $('#testType').value='A';
-    return window.__startClicked();
-  };
-  document.addEventListener('click',(e)=>{ // 事件委派備援
-    if(e.target && e.target.id==='btnStart') window.__startClicked?.();
-    if(e.target && e.target.id==='btnDemo') window.__startDemo?.();
-  });
+  }catch(e){ alert('題庫載入失敗：'+e.message); }
+}
+$('#btnStart').addEventListener('click', ()=>start(false));
+$('#btnDemo').addEventListener('click', ()=>{ if(!$('#username').value.trim()) $('#username').value='DEMO'; if(!$('#testType').value) $('#testType').value='A'; start(true);});
+$('#btnPrev').addEventListener('click', ()=>{ if(STATE.idx>0){ STATE.idx--; renderQuestion(); renderProgress(); }});
+$('#btnNext').addEventListener('click', ()=>{ if(STATE.idx<STATE.questions.length-1){ STATE.idx++; renderQuestion(); renderProgress(); }});
+$('#btnSubmit').addEventListener('click', ()=>submitQuiz(false));
 
-  // ========= 初始化 =========
-  (async function init(){
-    try{ await loadQuestions(); }catch(e){ dbg('初始化讀題失敗：' + e.message); }
-    renderPeople();
-    // 檢查雲端狀態徽章
-    try{
-      const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(), 6000);
-      const res=await fetch('https://asia-east1-agri-plant-quiz.cloudfunctions.net/api/top10', {mode:'cors', signal:ctl.signal});
-      clearTimeout(t);
-      if(res.ok){ CLOUD_OK=true; $('#cloudBadge').textContent='雲端：連線正常'; $('#cloudBadge').style.background='#dcfce7'; }
-      else { CLOUD_OK=false; $('#cloudBadge').textContent='雲端：未連線（改用本機）'; $('#cloudBadge').style.background='#fee2e2'; }
-    }catch(e){ CLOUD_OK=false; $('#cloudBadge').textContent='雲端：未連線（改用本機）'; $('#cloudBadge').style.background='#fee2e2'; dbg('雲端不可達：' + e.message); }
-    await renderBoard();
-  })();
-  </script>
+// 初始化就先載題（顯示版本號）；失敗不擋使用者
+loadQuestions().catch(e=>dbg('初始化失敗：'+e.message));
+</script>
 </body>
 </html>
