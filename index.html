@@ -1,54 +1,35 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-
-  <!-- ✅ SEO 設定 -->
-  <title>農藝丙級術科識別 線上模擬測驗 | 免費題庫練習平台</title>
-  <meta name="description" content="免費提供農藝丙級術科識別線上模擬測驗，完整題庫包含 A 認識作物、B 病蟲草害，適合全台高職農校學生考前練習，僅作教學使用。" />
-  <meta name="keywords" content="農藝丙級, 術科測驗, 線上模擬測驗, 題庫, 高職農校, 技能檢定, 農校考試, 勞動部術科" />
-  <meta name="author" content="農藝丙級模擬測驗團隊" />
-  <meta name="robots" content="index, follow" />
-  <link rel="canonical" href="https://r91628120.github.io/plant_quiz/" />
-
-  <style>
-  :root{--bg:#f5f7fa;--card:#fff;--text:#1e293b;--sub:#475569;--accent:#2563eb;--good:#16a34a;--bad:#dc2626;--muted:#cbd5e1}
-  *{box-sizing:border-box}
-  body{margin:0;background:linear-gradient(180deg,#f9fafb,#f1f5f9 20%,#e2e8f0);color:var(--text);font-family:system-ui,Segoe UI,Arial,"Noto Sans TC"}
-  .wrap{max-width:1100px;margin:0 auto;padding:22px}
-  .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:18px;box-shadow:0 4px 12px rgba(0,0,0,.06)}
-  h1{margin:0 0 10px}
-  .badge{display:inline-block;padding:4px 10px;border-radius:999px;background:#e2e8f0;border:1px solid #cbd5e1;margin-right:6px}
-  .row{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
-  input,select{padding:12px;border:1px solid #cbd5e1;border-radius:10px}
-  .btn{padding:12px 16px;border:1px solid #cbd5e1;border-radius:12px;background:#f1f5f9;font-weight:600;cursor:pointer}
-  .btn:hover{background:#e2e8f0}.btn.primary{background:#2563eb;color:#fff;border-color:#2563eb}.btn.primary:hover{background:#3b82f6}
-  .progress{height:8px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-top:10px}
-  .progress>span{display:block;height:100%;background:linear-gradient(90deg,#2563eb,#60a5fa);width:0}
-  .quiz-img{width:100%;max-height:360px;object-fit:contain;border-radius:12px;background:#f8fafc;border:1px solid #e5e7eb}
-  .choice{display:flex;gap:8px;padding:10px;border:1px solid #e5e7eb;border-radius:10px;background:#f8fafc;cursor:pointer}
-  .choice:hover{background:#eef2ff}
-  .choice b{min-width:1.6em;display:inline-block}
-  .palette{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-  .palette button{width:34px;height:34px;border:1px solid #cbd5e1;border-radius:10px;background:#f1f5f9}
-  .palette button.answered{border-color:#2563eb;background:#dbeafe}
-  table{width:100%;border-collapse:collapse} th,td{padding:10px;border-bottom:1px solid #e5e7eb}
-  .note{margin-top:12px;font-size:12px;color:#64748b;line-height:1.6}
-  .hint{font-size:12px;color:#b91c1c;margin-left:10px}
-  .shake{animation:shake .28s linear 1}@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>農藝丙級術科識別線上模擬測驗</title>
+<style>
+:root{--bg:#f5f7fa;--card:#fff;--text:#1e293b;--sub:#475569;--accent:#2563eb;--good:#16a34a;--bad:#dc2626;--muted:#cbd5e1}
+*{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#f9fafb,#f1f5f9 20%,#e2e8f0);color:var(--text);font-family:system-ui,Segoe UI,Arial,"Noto Sans TC"}
+.wrap{max-width:1100px;margin:0 auto;padding:22px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:18px;box-shadow:0 4px 12px rgba(0,0,0,.06)}
+h1{margin:0 0 10px} .badge{display:inline-block;padding:4px 10px;border-radius:999px;background:#e2e8f0;border:1px solid #cbd5e1;margin-right:6px}
+.row{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
+input,select{padding:12px;border:1px solid #cbd5e1;border-radius:10px}
+.btn{padding:12px 16px;border:1px solid #cbd5e1;border-radius:12px;background:#f1f5f9;font-weight:600;cursor:pointer}
+.btn:hover{background:#e2e8f0}.btn.primary{background:#2563eb;color:#fff;border-color:#2563eb}.btn.primary:hover{background:#3b82f6}
+.progress{height:8px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-top:10px}
+.progress>span{display:block;height:100%;background:linear-gradient(90deg,#2563eb,#60a5fa);width:0}
+.quiz-img{width:100%;max-height:360px;object-fit:contain;border-radius:12px;background:#f8fafc;border:1px solid #e5e7eb}
+.choice{display:flex;gap:8px;padding:10px;border:1px solid #e5e7eb;border-radius:10px;background:#f8fafc;cursor:pointer}
+.choice:hover{background:#eef2ff}
+.palette{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.palette button{width:34px;height:34px;border:1px solid #cbd5e1;border-radius:10px;background:#f1f5f9}
+.palette button.answered{border-color:#2563eb;background:#dbeafe}
+table{width:100%;border-collapse:collapse} th,td{padding:10px;border-bottom:1px solid #e5e7eb}
+</style>
 </head>
 <body>
 <div class="wrap">
-  <!-- 首頁 -->
   <div id="view-home" class="card">
     <h1>農藝丙級術科識別線上模擬測驗 <span class="badge" id="ver">ver —</span></h1>
     <p class="badge" id="cloud">來源：未載入</p>
-
-    <!-- 累計測驗人數 -->
-    <p><span class="badge" id="peopleCount">目前累計測驗人數：000000 人</span></p>
-
     <div class="row">
       <input id="username" placeholder="姓名/代號">
       <select id="type">
@@ -58,23 +39,11 @@
       </select>
       <button id="btnStart" class="btn primary">▶ 開始測驗</button>
       <button id="btnDemo" class="btn">快速體驗 10 題</button>
-      <span id="startHint" class="hint"></span>
-    </div>
-
-    <!-- 資料來源說明 -->
-    <div class="note">
-      資料來源：<b>勞動部勞動力發展署技能檢定中心</b>。本網站圖片僅供教育與非營利用途，著作權歸原權利人所有，嚴禁未經授權之商業使用。
     </div>
   </div>
 
-  <!-- 作答 -->
   <div id="view-quiz" class="card" style="display:none">
-    <div>
-      <span class="badge" id="bType"></span>
-      <span class="badge" id="bName"></span>
-      <span class="badge" id="bVer"></span>
-      <span class="badge" id="timer">20:00</span>
-    </div>
+    <div><span class="badge" id="bType"></span><span class="badge" id="bName"></span><span class="badge" id="bVer"></span><span class="badge" id="timer">20:00</span></div>
     <div class="progress"><span id="bar"></span></div>
     <div id="qwrap" style="margin-top:10px"></div>
     <div class="row">
@@ -85,15 +54,9 @@
     <div style="margin-top:8px"><div class="badge">題目導覽</div><div id="palette" class="palette"></div></div>
   </div>
 
-  <!-- 結果 -->
   <div id="view-result" class="card" style="display:none">
     <h3>測驗結果</h3>
-    <p>
-      <span class="badge" id="rName"></span>
-      <span class="badge" id="rType"></span>
-      <span class="badge" id="rScore"></span>
-      <span class="badge" id="rVer"></span>
-    </p>
+    <p><span class="badge" id="rName"></span><span class="badge" id="rType"></span><span class="badge" id="rScore"></span><span class="badge" id="rVer"></span></p>
     <table>
       <thead><tr><th>題號</th><th>圖</th><th>你的答案</th><th>正解</th><th>判定</th></tr></thead>
       <tbody id="tbody"></tbody>
@@ -108,42 +71,42 @@ const shuffle=a=>a.map(x=>[Math.random(),x]).sort((x,y)=>x[0]-y[0]).map(x=>x[1])
 const sample=(a,n)=>shuffle(a).slice(0,Math.min(n,a.length));
 const toView=id=>['#view-home','#view-quiz','#view-result'].forEach(v=>$(v).style.display=(v===id)?'block':'none');
 
-let QUIZ_VERSION='—', BANK_A=[], BANK_B1=[], BANK_B2=[];
-const Q_GCS_URL='https://storage.googleapis.com/agri_plant_quiz/questions.json';
+let QUIZ_VERSION='—',BANK_A=[],BANK_B1=[],BANK_B2=[];
+const Q_GCS_URL='https://storage.googleapis.com/agri_plant_quiz/questions.json'; // 只想純本地：改成空字串 ''
 
 async function loadQuestions(){
-  const urls=[]; if(Q_GCS_URL) urls.push(Q_GCS_URL); urls.push('questions.json');
-  let obj=null, src='';
+  const urls=[];
+  if(Q_GCS_URL) urls.push(Q_GCS_URL);
+  urls.push('questions.json');
+  let ok=null,src=''; 
   for(const u of urls){
-    try{ const r=await fetch(u+'?t='+Date.now(),{cache:'no-store'}); if(!r.ok) throw new Error(r.status);
-      obj=await r.json(); src=u; break; }catch(e){}}
-  if(!obj) throw new Error('題庫載入失敗');
-  QUIZ_VERSION=obj.version||QUIZ_VERSION; BANK_A=obj.A||[]; BANK_B1=obj.B1||[]; BANK_B2=obj.B2||[];
-  $('#ver').textContent='ver '+QUIZ_VERSION; $('#cloud').textContent='來源：'+(src.includes('googleapis')?'GCS':'本地');
+    try{
+      const r=await fetch(u+'?t='+Date.now(),{cache:'no-store'});
+      if(!r.ok) throw new Error(r.status);
+      ok=await r.json(); src=u; break;
+    }catch(e){}
+  }
+  if(!ok) throw new Error('題庫無法載入');
+  QUIZ_VERSION=ok.version||QUIZ_VERSION; BANK_A=ok.A||[]; BANK_B1=ok.B1||[]; BANK_B2=ok.B2||[];
+  $('#ver').textContent='ver '+QUIZ_VERSION;
+  $('#cloud').textContent='來源：'+(src.includes('googleapis')?'GCS':'本地');
 }
 
-const PEOPLE_KEY='agri_quiz_people';
-const getPeople=()=>Number(localStorage.getItem(PEOPLE_KEY)||0);
-const setPeople=n=>localStorage.setItem(PEOPLE_KEY,String(n));
-const renderPeople=()=>$('#peopleCount').textContent='目前累計測驗人數：'+String(getPeople()).padStart(6,'0')+' 人';
-
 const STATE={user:'',type:'A',qs:[],i:0,left:20*60,score:0}; let timer=null;
-
 function build(type,{demo=false}={}){
   const bank=(type==='A')?[...BANK_A]:[...BANK_B1,...BANK_B2];
   const need=demo?10:(type==='A'?50:40);
   const picked=sample(bank,need), names=bank.map(x=>x.name);
-  return picked.map(q=>{const wrong=sample(names.filter(n=>n!==q.name),3); const opts=shuffle([q.name,...wrong]);
-    return {img:q.image,a:q.name,ops:opts,y:null};});
+  return picked.map(q=>{const wrong=sample(names.filter(n=>n!==q.name),3);const options=shuffle([q.name,...wrong]);return{img:q.image,a:q.name,ops:options,y:null}});
 }
-
-function renderProgress(){const p=((STATE.i+1)/STATE.qs.length)*100;$('#bar').style.width=p+'%';}
+function renderProgress(){const p=((STATE.i+1)/STATE.qs.length)*100;$('#bar').style.width=p+'%'}
 function renderQ(){
-  const q=STATE.qs[STATE.i], total=STATE.qs.length; const letters=['A','B','C','D'];
-  $('#qwrap').innerHTML=`<div class="badge">第 ${STATE.i+1}/${total} 題</div>
+  const q=STATE.qs[STATE.i], total=STATE.qs.length;
+  $('#qwrap').innerHTML=`
+    <div class="badge">第 ${STATE.i+1}/${total} 題</div>
     <img class="quiz-img" src="${q.img}" onerror="this.src='https://placehold.co/900x600?text=Image'">
     <div style="display:grid;gap:8px;margin-top:10px">
-      ${q.ops.map((t,i)=>`<label class="choice"><input type="radio" name="q${STATE.i}" value="${t}" ${q.y===t?'checked':''}> <b>${letters[i]}.</b> ${t}</label>`).join('')}
+      ${q.ops.map((t,idx)=>`<label class="choice"><input type="radio" name="q${STATE.i}" value="${t}" ${q.y===t?'checked':''}> ${t}</label>`).join('')}
     </div>`;
   $$(`#qwrap input[type=radio]`).forEach(el=>el.onchange=e=>{STATE.qs[STATE.i].y=e.target.value;renderPalette()});
   $('#prev').disabled=(STATE.i===0); $('#next').disabled=(STATE.i===total-1);
@@ -153,33 +116,46 @@ function renderPalette(){
   STATE.qs.forEach((q,i)=>{const b=document.createElement('button');b.textContent=i+1;if(q.y)b.classList.add('answered');b.onclick=()=>{STATE.i=i;renderQ();renderProgress()};f.appendChild(b)});
   const p=$('#palette');p.innerHTML='';p.appendChild(f);
 }
-function startTimer(){clearInterval(timer);timer=setInterval(()=>{STATE.left--;const m=Math.floor(STATE.left/60), s=STATE.left%60;
-  $('#timer').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;if(STATE.left<=0){clearInterval(timer);submit()}},1000);}
+function startTimer(){
+  clearInterval(timer); timer=setInterval(()=>{STATE.left--;const m=Math.floor(STATE.left/60),s=STATE.left%60;$('#timer').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; if(STATE.left<=0){clearInterval(timer);submit()}},1000);
+}
+function submit(){
+  clearInterval(timer);
+  let ok=0, per=(STATE.type==='A')?2:2.5;
+  STATE.qs.forEach(q=>{if(q.y===q.a) ok++}); STATE.score=+(ok*per).toFixed(2);
+  $('#rName').textContent='應試者：'+STATE.user;
+  $('#rType').textContent='類別：'+(STATE.type==='A'?'A 認識作物':'B 病蟲草害');
+  $('#rScore').textContent='得分：'+STATE.score+' 分';
+  $('#rVer').textContent='ver '+QUIZ_VERSION;
+  const body=document.createDocumentFragment();
+  STATE.qs.forEach((q,i)=>{const tr=document.createElement('tr'); tr.innerHTML=`<td>${i+1}</td><td><img src="${q.img}" style="width:120px;height:80px;object-fit:cover;border:1px solid #e5e7eb;border-radius:8px" onerror="this.src='https://placehold.co/240x160'"></td><td>${q.y||'<span style="color:#64748b">未作答</span>'}</td><td>${q.a}</td><td>${q.y===q.a?'<span style="color:#16a34a">✔</span>':'<span style="color:#dc2626">✘</span>'}</td>`; body.appendChild(tr)});
+  $('#tbody').innerHTML=''; $('#tbody').appendChild(body);
+  toView('#view-result');
+}
 
-function submit(){clearInterval(timer);let ok=0, per=(STATE.type==='A')?2:2.5; STATE.qs.forEach(q=>{if(q.y===q.a) ok++});
-  STATE.score=+(ok*per).toFixed(2); $('#rName').textContent='應試者：'+STATE.user;
-  $('#rType').textContent='類別：'+(STATE.type==='A'?'A 認識作物':'B 病蟲草害'); $('#rScore').textContent='得分：'+STATE.score+' 分';
-  $('#rVer').textContent='ver '+QUIZ_VERSION; const body=document.createDocumentFragment();
-  STATE.qs.forEach((q,i)=>{const tr=document.createElement('tr');tr.innerHTML=`<td>${i+1}</td>
-    <td><img src="${q.img}" style="width:120px;height:80px;object-fit:cover;border:1px solid #e5e7eb;border-radius:8px" onerror="this.src='https://placehold.co/240x160'"></td>
-    <td>${q.y||'<span style="color:#64748b">未作答</span>'}</td><td>${q.a}</td>
-    <td>${q.y===q.a?'<span style="color:#16a34a">✔</span>':'<span style="color:#dc2626">✘</span>'}</td>`;body.appendChild(tr);});
-  $('#tbody').innerHTML=''; $('#tbody').appendChild(body); toView('#view-result');}
-
-function validate(){const n=$('#username').value.trim(),t=$('#type').value;const h=$('#startHint');h.textContent='';
-  if(!n||!t){h.textContent=(!n&&!t)?'請輸入姓名並選擇類別':(!n?'請輸入姓名':'請選擇類別');$('#btnStart').classList.add('shake');setTimeout(()=>$('#btnStart').classList.remove('shake'),320);return false}return true}
-
+/* 事件 */
 document.addEventListener('DOMContentLoaded', async ()=>{
-  try{await loadQuestions()}catch(e){alert('題庫載入失敗：'+e.message)} renderPeople();
-  $('#btnStart').onclick=()=>{if(!validate()) return;setPeople(getPeople()+1);renderPeople();const n=$('#username').value.trim(),t=$('#type').value;
-    STATE.user=n;STATE.type=t;STATE.qs=build(t);STATE.i=0;STATE.left=20*60;$('#bType').textContent=(t==='A'?'A 認識作物':'B 病蟲草害');
-    $('#bName').textContent=n;$('#bVer').textContent='ver '+QUIZ_VERSION;toView('#view-quiz');renderQ();renderPalette();renderProgress();startTimer();};
-  $('#btnDemo').onclick=()=>{$('#username').value='DEMO';$('#type').value='A';setPeople(getPeople()+1);renderPeople();
-    STATE.user='DEMO';STATE.type='A';STATE.qs=build('A',{demo:true});STATE.i=0;STATE.left=10*60;$('#bType').textContent='A 認識作物';
-    $('#bName').textContent='DEMO';$('#bVer').textContent='ver '+QUIZ_VERSION;toView('#view-quiz');renderQ();renderPalette();renderProgress();startTimer();};
-  $('#prev').onclick=()=>{STATE.i=Math.max(0,STATE.i-1);renderQ();renderProgress()}
-  $('#next').onclick=()=>{STATE.i=Math.min(STATE.qs.length-1,STATE.i+1);renderQ();renderProgress()}
-  $('#submit').onclick=submit; $('#again').onclick=()=>{toView('#view-home')};});
+  try{await loadQuestions()}catch(e){alert('題庫載入失敗：'+e.message)}
+  $('#btnStart').onclick=async ()=>{
+    const n=$('#username').value.trim(), t=$('#type').value;
+    if(!n||!t){alert('請輸入姓名並選擇類別');return}
+    STATE.user=n; STATE.type=t; STATE.qs=build(t); STATE.i=0; STATE.left=20*60;
+    $('#bType').textContent=(t==='A'?'A 認識作物':'B 病蟲草害'); $('#bName').textContent=n; $('#bVer').textContent='ver '+QUIZ_VERSION;
+    toView('#view-quiz'); renderQ(); renderPalette(); renderProgress(); startTimer();
+  };
+  $('#btnDemo').onclick=()=>{
+    $('#username').value='DEMO';
+    $('#type').value='A';
+    $('#btnStart').click();
+    // 將題數縮成 10 題
+    STATE.qs = build('A',{demo:true});
+    renderQ(); renderPalette(); renderProgress();
+  };
+  $('#prev').onclick=()=>{STATE.i=Math.max(0,STATE.i-1);renderQ();renderProgress()};
+  $('#next').onclick=()=>{STATE.i=Math.min(STATE.qs.length-1,STATE.i+1);renderQ();renderProgress()};
+  $('#submit').onclick=submit;
+  $('#again').onclick=()=>{toView('#view-home')};
+});
 </script>
 </body>
 </html>
