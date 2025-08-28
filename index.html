@@ -46,8 +46,8 @@
     <h1>農藝丙級術科識別線上模擬測驗 <span class="badge" id="ver">ver —</span></h1>
     <p class="badge" id="cloud">來源：未載入</p>
 
-    <!-- 累計測驗人數 -->
-    <p><span class="badge" id="peopleCount">目前累計測驗人數：000000 人</span></p>
+    <!-- ✅ 全站累計（Apps Script）＋ 本機備援 -->
+    <p><span class="badge" id="peopleCount">目前累計測驗人數：000000 人</span> <span id="cloudStatus" class="badge" style="background:#f1f5f9">雲端：連線中…</span></p>
 
     <div class="row">
       <input id="username" placeholder="姓名/代號">
@@ -62,10 +62,10 @@
     </div>
 
     <!-- 資料來源說明 -->
-    <div class="footnote">
+    <div class="note">
       資料來源：<b>勞動部勞動力發展署技能檢定中心</b>。本網站圖片僅供教育與非營利用途，著作權歸原權利人所有，嚴禁未經授權之商業使用。
     </div>
-    <div class="footnote">© 2025 Agri 凡事皆正面 Quiz · Email:r91628120@ctvs.ptc.edu.tw 僅供教學示範（支援 <code>questions.json</code> 類別題庫）
+    <div class="note">© 2025 Agri 凡事皆正面 Quiz · Email:r91628120@ctvs.ptc.edu.tw（支援 <code>questions.json</code> 類別題庫）
     </div>
     </div>
 
@@ -105,6 +105,59 @@
 </div>
 
 <script>
+/* ==============================
+   0) Apps Script 全站累計（雲端）+ 本機備援
+================================= */
+// ⬇️⬇️ 這裡換成你部署後的 Apps Script WebApp URL（以 /exec 結尾） ⬇️⬇️
+const COUNTER_URL = 'https://script.google.com/macros/s/REPLACE_WITH_YOUR_APPS_SCRIPT_ID/exec';
+
+const CLOUD_OK = ()=>{ const b=document.getElementById('cloudStatus'); b.textContent='雲端：連線正常'; b.style.background='#dcfce7'; };
+const CLOUD_FAIL = (msg)=>{ const b=document.getElementById('cloudStatus'); b.textContent='雲端：'+(msg||'離線'); b.style.background='#fee2e2'; };
+
+// 讀取全站累計
+async function fetchGlobalCount(){
+  try{
+    const r = await fetch(COUNTER_URL, { method:'GET' });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const j = await r.json();
+    CLOUD_OK();
+    return Number(j.count || 0);
+  }catch(e){
+    CLOUD_FAIL('離線');
+    return null; // 交由本機備援顯示
+  }
+}
+
+// 同一分頁只遞增一次（避免重複計數）
+async function bumpGlobalCountOnce(){
+  if(sessionStorage.getItem('counted')) return null;
+  try{
+    const r = await fetch(COUNTER_URL, { method:'POST' });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const j = await r.json();
+    sessionStorage.setItem('counted','1');
+    CLOUD_OK();
+    return Number(j.count || 0);
+  }catch(e){
+    CLOUD_FAIL('遞增失敗');
+    return null;
+  }
+}
+
+// 本機備援（與你以前版本一致：localStorage 會保留在同一台瀏覽器） :contentReference[oaicite:1]{index=1}
+const PEOPLE_KEY='agri_quiz_people';
+const getPeople=()=>Number(localStorage.getItem(PEOPLE_KEY)||0);
+const setPeople=n=>localStorage.setItem(PEOPLE_KEY,String(n));
+
+function renderPeople(n){
+  // n: 來自雲端（number）或 null（表示離線，用本機值）
+  const val = (typeof n==='number') ? n : getPeople();
+  document.getElementById('peopleCount').textContent='目前累計測驗人數：'+String(val).padStart(6,'0')+' 人';
+}
+
+/* ==============================
+   1) 題庫載入（GCS 或同目錄）
+================================= */
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const shuffle=a=>a.map(x=>[Math.random(),x]).sort((x,y)=>x[0]-y[0]).map(x=>x[1]);
 const sample=(a,n)=>shuffle(a).slice(0,Math.min(n,a.length));
@@ -118,25 +171,28 @@ async function loadQuestions(){
   let obj=null, src='';
   for(const u of urls){
     try{ const r=await fetch(u+'?t='+Date.now(),{cache:'no-store'}); if(!r.ok) throw new Error(r.status);
-      obj=await r.json(); src=u; break; }catch(e){}}
+      obj=await r.json(); src=u; break; }catch(e){}
+  }
   if(!obj) throw new Error('題庫載入失敗');
   QUIZ_VERSION=obj.version||QUIZ_VERSION; BANK_A=obj.A||[]; BANK_B1=obj.B1||[]; BANK_B2=obj.B2||[];
-  $('#ver').textContent='ver '+QUIZ_VERSION; $('#cloud').textContent='來源：'+(src.includes('googleapis')?'GCS':'本地');
+  document.getElementById('ver').textContent='ver '+QUIZ_VERSION;
+  document.getElementById('cloud').textContent='來源：'+(src.includes('googleapis')?'GCS':'本地');
 }
 
-const PEOPLE_KEY='agri_quiz_people';
-const getPeople=()=>Number(localStorage.getItem(PEOPLE_KEY)||0);
-const setPeople=n=>localStorage.setItem(PEOPLE_KEY,String(n));
-const renderPeople=()=>$('#peopleCount').textContent='目前累計測驗人數：'+String(getPeople()).padStart(6,'0')+' 人';
-
+/* ==============================
+   2) 測驗核心（保留你原本行為）
+================================= */
 const STATE={user:'',type:'A',qs:[],i:0,left:20*60,score:0}; let timer=null;
 
 function build(type,{demo=false}={}){
   const bank=(type==='A')?[...BANK_A]:[...BANK_B1,...BANK_B2];
   const need=demo?10:(type==='A'?50:40);
   const picked=sample(bank,need), names=bank.map(x=>x.name);
-  return picked.map(q=>{const wrong=sample(names.filter(n=>n!==q.name),3); const opts=shuffle([q.name,...wrong]);
-    return {img:q.image,a:q.name,ops:opts,y:null};});
+  return picked.map(q=>{
+    const wrong=sample(names.filter(n=>n!==q.name),3);
+    const ops=shuffle([q.name,...wrong]);
+    return {img:q.image,a:q.name,ops:ops,y:null};
+  });
 }
 
 function renderProgress(){const p=((STATE.i+1)/STATE.qs.length)*100;$('#bar').style.width=p+'%';}
@@ -158,30 +214,85 @@ function renderPalette(){
 function startTimer(){clearInterval(timer);timer=setInterval(()=>{STATE.left--;const m=Math.floor(STATE.left/60), s=STATE.left%60;
   $('#timer').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;if(STATE.left<=0){clearInterval(timer);submit()}},1000);}
 
-function submit(){clearInterval(timer);let ok=0, per=(STATE.type==='A')?2:2.5; STATE.qs.forEach(q=>{if(q.y===q.a) ok++});
-  STATE.score=+(ok*per).toFixed(2); $('#rName').textContent='應試者：'+STATE.user;
-  $('#rType').textContent='類別：'+(STATE.type==='A'?'A 認識作物':'B 病蟲草害'); $('#rScore').textContent='得分：'+STATE.score+' 分';
-  $('#rVer').textContent='ver '+QUIZ_VERSION; const body=document.createDocumentFragment();
-  STATE.qs.forEach((q,i)=>{const tr=document.createElement('tr');tr.innerHTML=`<td>${i+1}</td>
-    <td><img src="${q.img}" style="width:120px;height:80px;object-fit:cover;border:1px solid #e5e7eb;border-radius:8px" onerror="this.src='https://placehold.co/240x160'"></td>
-    <td>${q.y||'<span style="color:#64748b">未作答</span>'}</td><td>${q.a}</td>
-    <td>${q.y===q.a?'<span style="color:#16a34a">✔</span>':'<span style="color:#dc2626">✘</span>'}</td>`;body.appendChild(tr);});
-  $('#tbody').innerHTML=''; $('#tbody').appendChild(body); toView('#view-result');}
+function submit(){
+  clearInterval(timer);
+  let ok=0, per=(STATE.type==='A')?2:2.5; 
+  STATE.qs.forEach(q=>{if(q.y===q.a) ok++});
+  STATE.score=+(ok*per).toFixed(2);
+  $('#rName').textContent='應試者：'+STATE.user;
+  $('#rType').textContent='類別：'+(STATE.type==='A'?'A 認識作物':'B 病蟲草害');
+  $('#rScore').textContent='得分：'+STATE.score+' 分';
+  $('#rVer').textContent='ver '+QUIZ_VERSION;
+  const body=document.createDocumentFragment();
+  STATE.qs.forEach((q,i)=>{
+    const tr=document.createElement('tr');tr.innerHTML=`<td>${i+1}</td>
+      <td><img src="${q.img}" style="width:120px;height:80px;object-fit:cover;border:1px solid #e5e7eb;border-radius:8px" onerror="this.src='https://placehold.co/240x160'"></td>
+      <td>${q.y||'<span style="color:#64748b">未作答</span>'}</td><td>${q.a}</td>
+      <td>${q.y===q.a?'<span style="color:#16a34a">✔</span>':'<span style="color:#dc2626">✘</span>'}</td>`;
+    body.appendChild(tr);
+  });
+  $('#tbody').innerHTML=''; $('#tbody').appendChild(body);
+  toView('#view-result');
+}
 
-function validate(){const n=$('#username').value.trim(),t=$('#type').value;const h=$('#startHint');h.textContent='';
-  if(!n||!t){h.textContent=(!n&&!t)?'請輸入姓名並選擇類別':(!n?'請輸入姓名':'請選擇類別');$('#btnStart').classList.add('shake');setTimeout(()=>$('#btnStart').classList.remove('shake'),320);return false}return true}
+function validate(){
+  const n=$('#username').value.trim(), t=$('#type').value;
+  const h=$('#startHint'); h.textContent='';
+  if(!n||!t){
+    h.textContent=(!n&&!t)?'請輸入姓名並選擇類別':(!n?'請輸入姓名':'請選擇類別');
+    $('#btnStart').classList.add('shake'); setTimeout(()=>$('#btnStart').classList.remove('shake'),320);
+    return false;
+  }
+  return true;
+}
 
+/* ==============================
+   3) 綁定＆初始化
+================================= */
 document.addEventListener('DOMContentLoaded', async ()=>{
-  try{await loadQuestions()}catch(e){alert('題庫載入失敗：'+e.message)} renderPeople();
-  $('#btnStart').onclick=()=>{if(!validate()) return;setPeople(getPeople()+1);renderPeople();const n=$('#username').value.trim(),t=$('#type').value;
-    STATE.user=n;STATE.type=t;STATE.qs=build(t);STATE.i=0;STATE.left=20*60;$('#bType').textContent=(t==='A'?'A 認識作物':'B 病蟲草害');
-    $('#bName').textContent=n;$('#bVer').textContent='ver '+QUIZ_VERSION;toView('#view-quiz');renderQ();renderPalette();renderProgress();startTimer();};
-  $('#btnDemo').onclick=()=>{$('#username').value='DEMO';$('#type').value='A';setPeople(getPeople()+1);renderPeople();
-    STATE.user='DEMO';STATE.type='A';STATE.qs=build('A',{demo:true});STATE.i=0;STATE.left=10*60;$('#bType').textContent='A 認識作物';
-    $('#bName').textContent='DEMO';$('#bVer').textContent='ver '+QUIZ_VERSION;toView('#view-quiz');renderQ();renderPalette();renderProgress();startTimer();};
-  $('#prev').onclick=()=>{STATE.i=Math.max(0,STATE.i-1);renderQ();renderProgress()}
-  $('#next').onclick=()=>{STATE.i=Math.min(STATE.qs.length-1,STATE.i+1);renderQ();renderProgress()}
-  $('#submit').onclick=submit; $('#again').onclick=()=>{toView('#view-home')};});
+  // 先試著讀取雲端計數；失敗就用本機值顯示
+  const cloudCount = await fetchGlobalCount();
+  renderPeople(cloudCount);
+
+  try{ await loadQuestions(); }
+  catch(e){ alert('題庫載入失敗：'+e.message); }
+
+  // 開始測驗
+  $('#btnStart').onclick=async ()=>{
+    if(!validate()) return;
+
+    // a) 嘗試雲端遞增（同一分頁只加一次）
+    const newCloud = await bumpGlobalCountOnce();
+    // b) 總是維持本機備援也 +1（視覺一致；雲端成功時以雲端值覆蓋顯示）
+    setPeople(getPeople()+1);
+
+    // 顯示最新人數（雲端優先）
+    renderPeople(newCloud!==null ? newCloud : null);
+
+    // 進入作答
+    const n=$('#username').value.trim(), t=$('#type').value;
+    STATE.user=n; STATE.type=t; STATE.qs=build(t); STATE.i=0; STATE.left=20*60;
+    $('#bType').textContent=(t==='A'?'A 認識作物':'B 病蟲草害');
+    $('#bName').textContent=n; $('#bVer').textContent='ver '+QUIZ_VERSION;
+    toView('#view-quiz'); renderQ(); renderPalette(); renderProgress(); startTimer();
+  };
+
+  // 10 題體驗（也會計數；同分頁僅增 1 次）
+  $('#btnDemo').onclick=async ()=>{
+    $('#username').value='DEMO'; $('#type').value='A';
+    const newCloud = await bumpGlobalCountOnce(); setPeople(getPeople()+1);
+    renderPeople(newCloud!==null ? newCloud : null);
+
+    STATE.user='DEMO'; STATE.type='A'; STATE.qs=build('A',{demo:true}); STATE.i=0; STATE.left=10*60;
+    $('#bType').textContent='A 認識作物'; $('#bName').textContent='DEMO'; $('#bVer').textContent='ver '+QUIZ_VERSION;
+    toView('#view-quiz'); renderQ(); renderPalette(); renderProgress(); startTimer();
+  };
+
+  // 導覽
+  $('#prev').onclick=()=>{STATE.i=Math.max(0,STATE.i-1);renderQ();renderProgress();}
+  $('#next').onclick=()=>{STATE.i=Math.min(STATE.qs.length-1,STATE.i+1);renderQ();renderProgress();}
+  $('#submit').onclick=submit; $('#again').onclick=()=>{toView('#view-home');};
+});
 </script>
 </body>
 </html>
