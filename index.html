@@ -43,7 +43,7 @@
 <div class="wrap">
   <!-- 首頁 -->
   <div id="view-home" class="card">
-    <h1>農藝丙級術科識別線上模擬測驗 <span class="badge">ver <span id="ver">v2025-08-25</span></span></h1>
+    <h1>農藝丙級術科識別線上模擬測驗 <span class="badge">ver <span id="ver">—</span></span></h1>
     <p class="badge" id="cloud">來源：未載入</p>
     <p>
       <span class="badge" id="peopleCount">目前累計測驗人數：000000 人</span>
@@ -102,12 +102,13 @@
 </div>
 
 <script>
-/* ================= 0) Apps Script 計數器（無手動重試） ================= */
-// 將此改為你的 Web App /exec，例如：'https://script.google.com/macros/s/XXXX/exec'
-const COUNTER_URL = 'https://script.google.com/macros/s/AKfycbymPYEqdr91B70AB7oXK9ItmrD_gEUFDPFqkHEce2iTSOaDTqto6v4R8aNXPli5h3oO/exe';
+/* ================= 0) Apps Script 計數器：樂觀更新 + 背景遞增 =================
+   替換為你的 Web App /exec（可直接使用多類別版：/exec?subject=agri）
+*/
+const COUNTER_URL = 'https://script.google.com/macros/s/AKfycbxtY_zohVsck_4dnPvXnUaml9grxRm6C_3K6RML44s5yJIHAQXoKX222Hoii34LcKpf/exec';
+
 const $ = (s)=>document.querySelector(s);
 const cloudBadge = $('#cloudStatus');
-const isEcho = COUNTER_URL.includes('/macros/echo');
 
 function badgeSpin(text='連線中…'){ cloudBadge.style.background='#f1f5f9'; cloudBadge.innerHTML = `雲端：<span class="spin" aria-hidden="true"></span> ${text}`; }
 function badgeOK(text='連線正常'){ cloudBadge.style.background='#dcfce7'; cloudBadge.textContent = '雲端：' + text; }
@@ -121,47 +122,50 @@ function renderPeople(n){
   $('#peopleCount').textContent = '目前累計測驗人數：' + String(val).padStart(6,'0') + ' 人';
 }
 
-// GET with timeout（不阻塞 UI）
-async function fetchJSON(url, timeoutMs=700){
-  const ctrl = new AbortController();
-  const t = setTimeout(()=>ctrl.abort(), timeoutMs);
-  try{
-    const r = await fetch(url, {method:'GET', signal:ctrl.signal, keepalive:true, cache:'no-store'});
-    return await r.json();
-  }finally{ clearTimeout(t); }
+// 讓 COUNTER_URL 可已含查詢參數（例如 subject=agri）
+function withAction(action){
+  try{ const u = new URL(COUNTER_URL); u.searchParams.set('action', action); return u.toString(); }
+  catch(_){ return COUNTER_URL + (COUNTER_URL.includes('?')?'&':'?') + 'action=' + encodeURIComponent(action); }
 }
 
-// 讀雲端（首頁載入）
+// GET with timeout（避免阻塞）
+async function fetchJSON(url, timeoutMs=900){
+  const ctrl = new AbortController(); const t = setTimeout(()=>ctrl.abort(), timeoutMs);
+  try{ const r = await fetch(url, {method:'GET', signal:ctrl.signal, keepalive:true, cache:'no-store'}); return await r.json(); }
+  finally{ clearTimeout(t); }
+}
+
+// 首頁載入：先顯示本機 → 併行拉雲端覆蓋
 async function cloudGet(){
   try{
     badgeSpin('同步中…');
-    const url = isEcho ? COUNTER_URL : (COUNTER_URL+'?action=get');
-    const data = await fetchJSON(url, 900);
-    if(data && data.ok && typeof data.count==='number'){ badgeOK('連線正常'); return data.count; }
+    const data = await fetchJSON(withAction('get'), 900);
+    // 支援 {ok,count} 或 {ok,total,subjectCount}
+    if(data && data.ok){
+      const val = Number.isFinite(data.total) ? data.total : data.count;
+      if(Number.isFinite(val)){ badgeOK('連線正常'); return val; }
+    }
     badgeWarn('回應異常'); return null;
   }catch(_){ badgeErr('離線'); return null; }
 }
 
-// 背景遞增（一次一分頁；echo 模式略過）
+// 背景遞增（避免重複 +1：同分頁只加一次）
 function backgroundIncrement(){
-  if(sessionStorage.getItem('counted') || isEcho) return;
-  sessionStorage.setItem('counted','1');
+  if(sessionStorage.getItem('agri_counted')) return;
+  sessionStorage.setItem('agri_counted','1');
   badgeSpin('遞增中…');
-  const incUrl = COUNTER_URL + '?action=inc';
+  const incUrl = withAction('inc');
 
   // 1) sendBeacon 優先
-  try{ if(navigator.sendBeacon && navigator.sendBeacon(incUrl)) { setTimeout(()=>badgeOK('已遞增'),300); return; } }catch(_){}
+  try{
+    if(navigator.sendBeacon){
+      const ok = navigator.sendBeacon(incUrl, new Blob(['inc=1'],{type:'text/plain'}));
+      if(ok){ setTimeout(()=>badgeOK('已遞增'), 300); return; }
+    }
+  }catch(_){}
 
-  // 2) 備援 GET
-  fetchJSON(incUrl, 900)
-    .then(data=>{
-      if(data && data.ok && typeof data.count==='number'){
-        badgeOK('已遞增'); renderPeople(data.count);
-      }else{
-        badgeWarn('遞增未確認');
-      }
-    })
-    .catch(()=>{ badgeWarn('遞增未確認'); });
+  // 2) 備援 fetch（不 await）
+  fetch(incUrl, {method:'POST', keepalive:true}).catch(()=>{}).finally(()=>badgeOK('已遞增'));
 }
 
 /* ================= 1) 題庫載入 ================= */
@@ -170,16 +174,17 @@ const Q_URL='questions.json';
 
 async function loadQuestions(){
   try{
-    const r=await fetch(Q_URL+'?t='+Date.now(),{cache:'no-store'}); if(!r.ok) throw new Error(r.status);
+    const r=await fetch(Q_URL+'?t='+Date.now(),{cache:'no-store'});
+    if(!r.ok) throw new Error(r.status);
     const obj = await r.json();
     QUIZ_VERSION = obj.version || QUIZ_VERSION;
     BANK_A = obj.A || []; BANK_B1 = obj.B1 || []; BANK_B2 = obj.B2 || [];
-    $('#ver').textContent = QUIZ_VERSION; // 首頁顯示版本（僅文字，不再重複加 "ver"）
+    $('#ver').textContent = QUIZ_VERSION;
     $('#cloud').textContent='來源：本地';
   }catch(e){ alert('題庫載入失敗：'+e.message); }
 }
 
-/* ================= 2) 測驗核心 ================= */
+/* ================= 2) 測驗核心（維持 index006 流程） ================= */
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const shuffle=a=>a.map(x=>[Math.random(),x]).sort((x,y)=>x[0]-y[0]).map(x=>x[1]);
 const sample=(a,n)=>shuffle(a).slice(0,Math.min(n,a.length));
@@ -250,17 +255,19 @@ function validate(){
 
 /* ================= 3) 綁定 & 初始化 ================= */
 document.addEventListener('DOMContentLoaded', async ()=>{
-  // 首頁載入：先顯示本機數，不阻塞 UI；雲端回來再覆蓋
+  // 1) 累計人數：本機先顯示 → 併行雲端覆蓋
   renderPeople();
   const c = await cloudGet(); if(c!==null) renderPeople(c);
 
+  // 2) 題庫
   try{ await loadQuestions(); }catch(e){ alert('題庫載入失敗：'+e.message); }
 
-  // 開始測驗 —— 樂觀更新 + 背景遞增（不阻塞）
+  // 3) 開始測驗（樂觀更新 + 背景遞增）
   $('#btnStart').onclick=()=>{
     if(!validate()) return;
     setLocalCount(getLocalCount()+1); renderPeople();
     backgroundIncrement();
+
     const n=$('#username').value.trim(), t=$('#type').value;
     STATE.user=n; STATE.type=t; STATE.qs=build(t); STATE.i=0; STATE.left=20*60;
     $('#bType').textContent=(t==='A'?'A 認識作物':'B 病蟲草害');
@@ -268,17 +275,18 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     toView('#view-quiz'); renderQ(); renderPalette(); renderProgress(); startTimer();
   };
 
-  // 快速體驗 —— 同樣不等待雲端
+  // 4) 快速體驗（10 題，不等待雲端）
   $('#btnDemo').onclick=()=>{
     $('#username').value='DEMO'; $('#type').value='A';
     setLocalCount(getLocalCount()+1); renderPeople();
     backgroundIncrement();
+
     STATE.user='DEMO'; STATE.type='A'; STATE.qs=build('A',{demo:true}); STATE.i=0; STATE.left=10*60;
     $('#bType').textContent='A 認識作物'; $('#bName').textContent='DEMO'; $('#bVer').textContent = QUIZ_VERSION.startsWith('ver') ? QUIZ_VERSION : ('ver '+QUIZ_VERSION);
     toView('#view-quiz'); renderQ(); renderPalette(); renderProgress(); startTimer();
   };
 
-  // 導覽 & 交卷 & 回首頁
+  // 5) 導覽 & 交卷 & 回首頁
   $('#prev').onclick=()=>{STATE.i=Math.max(0,STATE.i-1);renderQ();renderProgress();}
   $('#next').onclick=()=>{STATE.i=Math.min(STATE.qs.length-1,STATE.i+1);renderQ();renderProgress();}
   $('#submit').onclick=submit; $('#again').onclick=()=>{toView('#view-home');};
