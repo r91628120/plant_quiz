@@ -103,9 +103,9 @@
 
 <script>
 /* ================= 0) Apps Script 計數器：樂觀更新 + 背景遞增 =================
-   替換為你的 Web App /exec（可直接使用多類別版：/exec?subject=agri）
+   把下面換成你的 Web App /exec；多類別統計請保留 subject=agri
 */
-const COUNTER_URL = 'https://script.google.com/macros/s/AKfycbxtY_zohVsck_4dnPvXnUaml9grxRm6C_3K6RML44s5yJIHAQXoKX222Hoii34LcKpf/exec';
+const COUNTER_URL = 'https://script.google.com/macros/s/AKfycbxtY_zohVsck_4dnPvXnUaml9grxRm6C_3K6RML44s5yJIHAQXoKX222Hoii34LcKpf/exec?subject=agri';
 
 const $ = (s)=>document.querySelector(s);
 const cloudBadge = $('#cloudStatus');
@@ -122,7 +122,7 @@ function renderPeople(n){
   $('#peopleCount').textContent = '目前累計測驗人數：' + String(val).padStart(6,'0') + ' 人';
 }
 
-// 讓 COUNTER_URL 可已含查詢參數（例如 subject=agri）
+// 讓 COUNTER_URL 可再加 action
 function withAction(action){
   try{ const u = new URL(COUNTER_URL); u.searchParams.set('action', action); return u.toString(); }
   catch(_){ return COUNTER_URL + (COUNTER_URL.includes('?')?'&':'?') + 'action=' + encodeURIComponent(action); }
@@ -135,7 +135,7 @@ async function fetchJSON(url, timeoutMs=900){
   finally{ clearTimeout(t); }
 }
 
-// 首頁載入：先顯示本機 → 併行拉雲端覆蓋
+// 首頁載入：本機先顯示 → 併行拉雲端覆蓋
 async function cloudGet(){
   try{
     badgeSpin('同步中…');
@@ -184,7 +184,7 @@ async function loadQuestions(){
   }catch(e){ alert('題庫載入失敗：'+e.message); }
 }
 
-/* ================= 2) 測驗核心（維持 index006 流程） ================= */
+/* ================= 2) 測驗核心（維持原本流程） ================= */
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const shuffle=a=>a.map(x=>[Math.random(),x]).sort((x,y)=>x[0]-y[0]).map(x=>x[1]);
 const sample=(a,n)=>shuffle(a).slice(0,Math.min(n,a.length));
