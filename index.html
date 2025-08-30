@@ -103,7 +103,7 @@
 
 <script>
 /* ================= 0) Apps Script 計數器：樂觀更新 + 背景遞增 =================
-   已改為「農藝」專用的 Web App /exec；多類別統計以 subject=agri 傳入
+   已改為「農藝」專用 Web App /exec（獨立於園藝）；多類別統計以 subject=agri 傳入
 */
 const COUNTER_URL = 'https://script.google.com/macros/s/AKfycbzi5-XDMz9exSWXCj0Cfz1a2-YjgqZ34vdf3uEdZr07IISbee693wh9O8jF9hhN53_s8Q/exec?subject=agri';
 
@@ -135,7 +135,7 @@ async function fetchJSON(url, timeoutMs=900){
   finally{ clearTimeout(t); }
 }
 
-// 首頁載入：本機先顯示 → 併行拉雲端覆蓋
+// 首頁載入：本機先顯示 → 併行雲端覆蓋
 async function cloudGet(){
   try{
     badgeSpin('同步中…');
