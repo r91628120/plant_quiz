@@ -102,45 +102,46 @@
 </div>
 
 <script>
-<!-- ① 計數器：請放在 <script> 裡最前面，其它程式不變 -->
-// ===== Apps Script 計數器（與園藝版相同邏輯）=====
+/* ================= 0) Apps Script 計數器：樂觀更新 + 背景遞增 =================
+   已改為「農藝」專用的 Web App /exec；多類別統計以 subject=agri 傳入
+*/
 const COUNTER_URL = 'https://script.google.com/macros/s/AKfycbzi5-XDMz9exSWXCj0Cfz1a2-YjgqZ34vdf3uEdZr07IISbee693wh9O8jF9hhN53_s8Q/exec?subject=agri';
 
 const $ = (s)=>document.querySelector(s);
-const cloudBadge = $('#cloudStatus');   // 你的頁面上已有這個徽章（雲端：連線中/正常…）
+const cloudBadge = $('#cloudStatus');
 
-function badgeSpin(text='連線中…'){ cloudBadge && (cloudBadge.style.background='#f1f5f9', cloudBadge.innerHTML=`雲端：<span class="spin"></span> ${text}`); }
-function badgeOK(text='連線正常'){ cloudBadge && (cloudBadge.style.background='#dcfce7', cloudBadge.textContent='雲端：'+text); }
-function badgeWarn(text){ cloudBadge && (cloudBadge.style.background='#fffbeb', cloudBadge.textContent='雲端：'+text); }
-function badgeErr(text='離線'){ cloudBadge && (cloudBadge.style.background='#fee2e2', cloudBadge.textContent='雲端：'+text); }
+function badgeSpin(text='連線中…'){ cloudBadge.style.background='#f1f5f9'; cloudBadge.innerHTML = `雲端：<span class="spin" aria-hidden="true"></span> ${text}`; }
+function badgeOK(text='連線正常'){ cloudBadge.style.background='#dcfce7'; cloudBadge.textContent = '雲端：' + text; }
+function badgeWarn(text){ cloudBadge.style.background='#fffbeb'; cloudBadge.textContent = '雲端：' + text; }
+function badgeErr(text='離線'){ cloudBadge.style.background='#fee2e2'; cloudBadge.textContent = '雲端：' + text; }
 
-// 本機備援計數（鍵名換成專屬 agri，避免與園藝互相影響）
 const getLocalCount = () => Number(localStorage.getItem('agri_quiz_people')||0);
-const setLocalCount  = (n) => localStorage.setItem('agri_quiz_people', String(n));
-function renderPeople(n){ const v = (typeof n==='number')? n : getLocalCount(); $('#peopleCount').textContent = '目前累計測驗人數：' + String(v).padStart(6,'0') + ' 人'; }
+const setLocalCount = n => localStorage.setItem('agri_quiz_people', String(n));
+function renderPeople(n){
+  const val = (typeof n==='number')? n : getLocalCount();
+  $('#peopleCount').textContent = '目前累計測驗人數：' + String(val).padStart(6,'0') + ' 人';
+}
 
-// 讓 COUNTER_URL 可帶 action 參數
+// 讓 COUNTER_URL 可再加 action
 function withAction(action){
-  try{ const u=new URL(COUNTER_URL); u.searchParams.set('action',action); return u.toString(); }
+  try{ const u = new URL(COUNTER_URL); u.searchParams.set('action', action); return u.toString(); }
   catch(_){ return COUNTER_URL + (COUNTER_URL.includes('?')?'&':'?') + 'action=' + encodeURIComponent(action); }
 }
 
-// GET JSON（短逾時避免卡住 UI）
+// GET with timeout（避免阻塞）
 async function fetchJSON(url, timeoutMs=900){
   const ctrl = new AbortController(); const t = setTimeout(()=>ctrl.abort(), timeoutMs);
-  try{
-    const r = await fetch(url, {method:'GET', signal:ctrl.signal, keepalive:true, cache:'no-store'});
-    return await r.json();
-  } finally { clearTimeout(t); }
+  try{ const r = await fetch(url, {method:'GET', signal:ctrl.signal, keepalive:true, cache:'no-store'}); return await r.json(); }
+  finally{ clearTimeout(t); }
 }
 
-// 首頁載入：本機先顯示 → 併行向雲端取最新覆蓋
+// 首頁載入：本機先顯示 → 併行拉雲端覆蓋
 async function cloudGet(){
   try{
     badgeSpin('同步中…');
     const data = await fetchJSON(withAction('get'), 900);
+    // 支援 {ok,count} 或 {ok,total,subjectCount}
     if(data && data.ok){
-      // 兼容 {ok,count} 或 {ok,total}
       const val = Number.isFinite(data.total) ? data.total : data.count;
       if(Number.isFinite(val)){ badgeOK('連線正常'); return val; }
     }
@@ -148,37 +149,24 @@ async function cloudGet(){
   }catch(_){ badgeErr('離線'); return null; }
 }
 
-// 背景遞增（同分頁只加一次）
+// 背景遞增（避免重複 +1：同分頁只加一次）
 function backgroundIncrement(){
-  if(sessionStorage.getItem('agri_counted')) return;    // 防重
+  if(sessionStorage.getItem('agri_counted')) return;
   sessionStorage.setItem('agri_counted','1');
   badgeSpin('遞增中…');
   const incUrl = withAction('inc');
 
-  // 1) 優先 sendBeacon（離頁也能送）
+  // 1) sendBeacon 優先
   try{
     if(navigator.sendBeacon){
       const ok = navigator.sendBeacon(incUrl, new Blob(['inc=1'],{type:'text/plain'}));
-      if(ok){ setTimeout(()=>badgeOK('已遞增'),300); return; }
+      if(ok){ setTimeout(()=>badgeOK('已遞增'), 300); return; }
     }
   }catch(_){}
 
-  // 2) 備援 fetch（不等待）
+  // 2) 備援 fetch（不 await）
   fetch(incUrl, {method:'POST', keepalive:true}).catch(()=>{}).finally(()=>badgeOK('已遞增'));
 }
-
-// ===== 啟動：在 DOMContentLoaded 裡加上這三行（其它不動）=====
-document.addEventListener('DOMContentLoaded', async ()=>{
-  // (a) 首頁一進來：先渲染本機 → 併行取雲端覆蓋
-  renderPeople();
-  const cloud = await cloudGet(); if(cloud!==null) renderPeople(cloud);
-
-  // (b) 【開始測驗】按鈕事件中，在「通過欄位檢查」後，加上：
-  // setLocalCount(getLocalCount()+1); renderPeople(); backgroundIncrement();
-
-  // (c) 【快速體驗】也同樣加上 (b) 那 3 行，讓 DEMO 也計入。
-});
-</script>
 
 /* ================= 1) 題庫載入 ================= */
 let QUIZ_VERSION='—', BANK_A=[], BANK_B1=[], BANK_B2=[];
